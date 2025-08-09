@@ -87,6 +87,12 @@
         .controls button:hover {
             background-color: #45a049;
         }
+        #reset-button {
+            background-color: #f44336; /* Red */
+        }
+        #reset-button:hover {
+            background-color: #da190b;
+        }
         .results {
             margin-top: 25px;
             display: grid;
@@ -109,8 +115,54 @@
             font-weight: bold;
             color: #2e7d32;
         }
+        /* モーダルウィンドウのスタイル */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+        .modal-content p {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        .modal-buttons button {
+            padding: 10px 25px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        #modal-ok-button {
+            background-color: #f44336; /* Red */
+            color: white;
+        }
+        #modal-cancel-button {
+            background-color: #e0e0e0;
+            color: #333;
+        }
         .hidden {
-            visibility: hidden;
+            display: none;
         }
         /* レスポンシブ対応 */
         @media (max-width: 600px) {
@@ -142,7 +194,10 @@
                     <option value="off">OFF</option>
                 </select>
             </div>
-            <button id="count-button" class="hidden">カウント</button>
+            <div>
+                <button id="count-button">カウント</button>
+                <button id="reset-button">リセット</button>
+            </div>
         </div>
 
         <textarea id="text-input" placeholder="ここにテキストを入力してください..."></textarea>
@@ -170,12 +225,29 @@
             </div>
         </div>
     </div>
+    
+    <!-- リセット確認用モーダル -->
+    <div id="reset-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <p>入力した文字をすべてリセットしますか？</p>
+            <div class="modal-buttons">
+                <button id="modal-ok-button">OK</button>
+                <button id="modal-cancel-button">キャンセル</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const textInput = document.getElementById('text-input');
             const realtimeToggle = document.getElementById('realtime-toggle');
             const countButton = document.getElementById('count-button');
+            const resetButton = document.getElementById('reset-button');
+            
+            const resetModal = document.getElementById('reset-modal');
+            const modalOkButton = document.getElementById('modal-ok-button');
+            const modalCancelButton = document.getElementById('modal-cancel-button');
+            
             const charCount = document.getElementById('char-count');
             const noNewlineCharCount = document.getElementById('no-newline-char-count');
             const noSpaceCharCount = document.getElementById('no-space-char-count');
@@ -210,16 +282,14 @@
                 manuscriptPages.textContent = totalChars > 0 ? manuscriptCount : 0;
             };
 
-            // リアルタイムカウントON/OFFとボタン表示の切り替え
+            // リアルタイムカウントON/OFFの切り替え
             const handleToggle = () => {
                 if (realtimeToggle.value === 'on') {
                     // ONの場合はリアルタイムでカウント
-                    countButton.classList.add('hidden');
                     textInput.addEventListener('input', updateCounts);
                     updateCounts(); // ONにした時に即時更新
                 } else {
-                    // OFFの場合はボタンを表示し、リアルタイムカウントを停止
-                    countButton.classList.remove('hidden');
+                    // OFFの場合はリアルタイムカウントを停止
                     textInput.removeEventListener('input', updateCounts);
                 }
             };
@@ -229,6 +299,30 @@
             
             // カウントボタンのクリックイベント
             countButton.addEventListener('click', updateCounts);
+
+            // リセットボタンのクリックイベント
+            resetButton.addEventListener('click', () => {
+                resetModal.classList.remove('hidden');
+            });
+            
+            // モーダルOKボタンのクリックイベント
+            modalOkButton.addEventListener('click', () => {
+                textInput.value = '';
+                updateCounts();
+                resetModal.classList.add('hidden');
+            });
+            
+            // モーダルキャンセルボタンのクリックイベント
+            modalCancelButton.addEventListener('click', () => {
+                resetModal.classList.add('hidden');
+            });
+            
+            // モーダル外をクリックした際のイベント
+            resetModal.addEventListener('click', (event) => {
+                if (event.target === resetModal) {
+                    resetModal.classList.add('hidden');
+                }
+            });
 
             // ページ読み込み時に初期状態をセット
             handleToggle();
