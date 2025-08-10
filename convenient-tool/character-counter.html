@@ -166,6 +166,11 @@
             margin-top: 5px;
             display: block;
         }
+        .explanation {
+            font-size: 0.8rem;
+            color: #777;
+            margin-top: 5px;
+        }
         /* モーダルウィンドウのスタイル */
         .modal-overlay {
             position: fixed;
@@ -215,6 +220,43 @@
         .hidden {
             display: none;
         }
+        
+        .tool-info-section {
+            margin-top: 40px;
+        }
+        
+        .tool-info-section h2 {
+            font-size: 1.5rem;
+            color: #1a237e;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .tool-info-section p {
+            text-align: center;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        .explanation-list {
+            list-style: none;
+            padding: 0;
+            text-align: left;
+            margin-top: 20px;
+        }
+        
+        .explanation-list dt {
+            font-weight: bold;
+            color: #2e7d32;
+            margin-top: 10px;
+        }
+        
+        .explanation-list dd {
+            margin-left: 20px;
+            color: #555;
+            line-height: 1.4;
+        }
         /* レスポンシブ対応 */
         @media (max-width: 600px) {
             .container {
@@ -234,7 +276,7 @@
     <div class="container">
         <h1>文字数カウントツール</h1>
         <p class="description">
-            リアルタイムで文字数を数えるツールです。<br>SNSの投稿やレポートの執筆時に、文字数制限を気にせず文章を作成できます。<br>入力されたテキストは、あなたのデバイス内で処理されるため、プライバシーは保護されます。
+            リアルタイムで文字数を数えるツールです。SNSの投稿やレポートの執筆時に、文字数制限を気にせず文章を作成できます。<br>入力されたテキストは、あなたのデバイス内で処理されるため、プライバシーは保護されます。
         </p>
 
         <div class="controls">
@@ -280,7 +322,7 @@
             </div>
             <!-- SNS文字数カウントを追加 -->
             <div class="result-box sns-count">
-                <h3>X（Twitter）</h3>
+                <h3>X（旧Twitter）</h3>
                 <span id="x-count" class="count">0</span><span id="x-max-count" class="max-count"> / 280</span>
                 <span class="caption">※全角文字は2文字としてカウントされます</span>
             </div>
@@ -292,6 +334,40 @@
                 <h3>Facebook</h3>
                 <span id="fb-count" class="count">0</span><span id="fb-max-count" class="max-count"> / 16,000</span>
             </div>
+        </div>
+        
+        <hr style="margin: 30px 0; border: 1px solid #e0e0e0;">
+
+        <div class="tool-info-section">
+            <h2>このツールについて</h2>
+            <p>
+                この「文字数カウントツール」は、X（旧Twitter）やInstagram、レポート執筆など、様々なシーンでの文字数管理をサポートするために開発されました。
+                入力されたテキストはブラウザ内でのみ処理されるため、外部のサーバーに送信されることはありません。安心してご利用いただけます。
+                <br>
+                リアルタイムでの文字数、バイト数、原稿用紙枚数などの多様なカウント機能に加え、Xの特殊なカウント方式にも対応しています。今後も皆さまのご意見を参考に、より使いやすいツールを目指していきます。
+            </p>
+            
+            <h2 style="font-size: 1.5rem; color: #1a237e; text-align: center; margin-top: 30px; margin-bottom: 10px;">カウント項目の説明</h2>
+            <dl class="explanation-list">
+                <dt>文字数</dt>
+                <dd>改行やスペースを含む、入力された文字全体の数。</dd>
+                <dt>改行を除いた文字数</dt>
+                <dd>改行のみを除外してカウントした文字数。</dd>
+                <dt>改行、空白を除いた文字数</dt>
+                <dd>改行、スペース、タブなどすべての空白文字を除外した文字数。</dd>
+                <dt>バイト数 (UTF-8)</dt>
+                <dd>テキストのデータサイズ。データベースの文字数制限などに使われます。</dd>
+                <dt>原稿用紙の枚数 (400字換算)</dt>
+                <dd>400字詰めの原稿用紙に換算した場合の目安です。</dd>
+                <dt>行数</dt>
+                <dd>テキストに含まれる改行の数（空行も含む）です。</dd>
+                <dt>X（旧Twitter）</dt>
+                <dd>全角文字（日本語、句読点、記号など）は2ポイント、半角文字は1ポイントとしてカウントします。日本語など全角文字は140文字まで、英数字など半角文字は280文字まで入力可能であるため、全角を2文字として計算しています。</dd>
+                <dt>Instagram</dt>
+                <dd>文字数制限の目安として、単純な文字数を表示しています。最大文字数は2,200文字です。</dd>
+                <dt>Facebook</dt>
+                <dd>文字数制限の目安として、単純な文字数を表示しています。最大文字数は16,000文字です。</dd>
+            </dl>
         </div>
     </div>
     
