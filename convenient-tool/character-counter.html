@@ -223,6 +223,10 @@
                 <h3>原稿用紙の枚数 (400字換算)</h3>
                 <span id="manuscript-pages" class="count">0</span>
             </div>
+            <div class="result-box">
+                <h3>行数</h3>
+                <span id="line-count" class="count">0</span>
+            </div>
         </div>
     </div>
     
@@ -253,6 +257,7 @@
             const noSpaceCharCount = document.getElementById('no-space-char-count');
             const byteCount = document.getElementById('byte-count');
             const manuscriptPages = document.getElementById('manuscript-pages');
+            const lineCount = document.getElementById('line-count');
 
             // カウント処理を行うメイン関数
             const updateCounts = () => {
@@ -271,15 +276,20 @@
                 const encoder = new TextEncoder();
                 const bytes = encoder.encode(text).length;
 
-                // 5. 原稿用紙の枚数を計算 (400字/枚換算)
+                // 5. 原稿用紙の枚数を計算 (400字換算)
                 const manuscriptCount = Math.ceil(totalChars / 400);
 
+                // 6. 行数をカウント
+                const lines = text.split('\n');
+                const lineCountResult = lines.length;
+                
                 // 画面に結果を表示
                 charCount.textContent = totalChars;
                 noNewlineCharCount.textContent = charsNoNewline;
                 noSpaceCharCount.textContent = charsNoSpace;
                 byteCount.textContent = bytes;
                 manuscriptPages.textContent = totalChars > 0 ? manuscriptCount : 0;
+                lineCount.textContent = text === '' ? 0 : lineCountResult; // テキストが空の場合は0行と表示
             };
 
             // リアルタイムカウントON/OFFの切り替え
