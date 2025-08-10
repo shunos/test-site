@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>便利ツール</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* スクロールバーのスタイルをカスタマイズ */
+        body::-webkit-scrollbar {
+            width: 8px;
+        }
+        body::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1; /* gray-300 */
+            border-radius: 9999px;
+        }
+        body::-webkit-scrollbar-track {
+            background-color: #f1f5f9; /* gray-100 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8 lg:p-12">
+        <!-- ヘッダーセクション -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4">
+                便利ツール
+            </h1>
+            <p class="text-base md:text-lg text-gray-600 max-w-2xl mx-auto">
+                日々の作業を少し楽にするための小さなツール集です。
+            </p>
+        </header>
+
+        <!-- ツールリストセクション -->
+        <main>
+            <section class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6 border-b pb-4">ツール一覧</h2>
+                
+                <ul class="space-y-4">
+                    <!-- ツールアイテム1 (文字数カウントツール) -->
+                    <li class="border rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200 ease-in-out">
+                        <a href="文字数カウントツールのURLをここに入力" class="block">
+                            <h3 class="text-xl font-bold text-indigo-600 mb-1">文字数カウントツール</h3>
+                            <p class="text-gray-500">
+                                テキストの文字数、バイト数、SNSでの文字数をリアルタイムでカウントします。
+                            </p>
+                        </a>
+                    </li>
+                    
+                    <!-- ツールアイテム2 (例) -->
+                    <li class="border rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200 ease-in-out">
+                        <a href="#" class="block">
+                            <h3 class="text-xl font-bold text-indigo-600 mb-1">JSON整形ツール（仮）</h3>
+                            <p class="text-gray-500">
+                                見にくいJSONデータをきれいに整形し、コピーしやすくします。
+                            </p>
+                        </a>
+                    </li>
+                    
+                    <!-- ツールアイテム3 (例) -->
+                    <li class="border rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200 ease-in-out">
+                        <a href="#" class="block">
+                            <h3 class="text-xl font-bold text-indigo-600 mb-1">パスワード生成ツール（仮）</h3>
+                            <p class="text-gray-500">
+                                覚えやすく安全なパスワードをランダムで生成します。
+                            </p>
+                        </a>
+                    </li>
+                    
+                    <!-- ツールアイテム4 (例) -->
+                    <li class="border rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200 ease-in-out">
+                        <a href="#" class="block">
+                            <h3 class="text-xl font-bold text-indigo-600 mb-1">QRコード生成ツール（仮）</h3>
+                            <p class="text-gray-500">
+                                URLやテキストから簡単にQRコードを生成できます。
+                            </p>
+                        </a>
+                    </li>
+                </ul>
+            </section>
+        </main>
+    </div>
+
+</body>
+</html>
