@@ -68,12 +68,47 @@
             font-weight: 600;
             color: #555;
         }
-        .controls select {
-            padding: 8px 12px;
-            font-size: 0.9rem;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
+        /* トグルスイッチのスタイル */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
         }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 28px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #4CAF50;
+        }
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+        
         .controls button {
             background-color: #4CAF50; /* Green */
             color: white;
@@ -204,11 +239,11 @@
 
         <div class="controls">
             <div class="toggle-group">
-                <label for="realtime-toggle">リアルタイムカウント:</label>
-                <select id="realtime-toggle">
-                    <option value="on">ON</option>
-                    <option value="off">OFF</option>
-                </select>
+                <label>リアルタイムカウント:</label>
+                <label class="switch">
+                    <input type="checkbox" id="realtime-toggle" checked>
+                    <span class="slider"></span>
+                </label>
             </div>
             <div>
                 <button id="count-button">カウント</button>
@@ -247,7 +282,7 @@
             <div class="result-box sns-count">
                 <h3>X（Twitter）</h3>
                 <span id="x-count" class="count">0</span><span id="x-max-count" class="max-count"> / 280</span>
-                <span class="caption">※全角文字は2文字としてカウント</span>
+                <span class="caption">※全角文字は2文字としてカウントされます</span>
             </div>
             <div class="result-box sns-count">
                 <h3>Instagram</h3>
@@ -294,8 +329,8 @@
             const igCount = document.getElementById('ig-count');
             const fbCount = document.getElementById('fb-count');
 
-            // 全角文字を判定する正規表現（日本語、中国語、韓国語）
-            const fullwidthRegex = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff61-\uff9f]/g;
+            // 全角文字（日本語、句読点、記号など）を判定する正規表現
+            const fullwidthRegex = /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff01-\uff5e\u4e00-\u9faf]/g;
 
             // カウント処理を行うメイン関数
             const updateCounts = () => {
@@ -322,7 +357,7 @@
                 const lineCountResult = lines.length;
 
                 // 7. SNSの文字数をカウント
-                // X (Twitter): 全角2文字、半角1文字
+                // X (Twitter): 全角2ポイント、半角1ポイント
                 const fullwidthChars = (text.match(fullwidthRegex) || []).length;
                 const halfwidthChars = totalChars - fullwidthChars;
                 const xCountResult = fullwidthChars * 2 + halfwidthChars;
@@ -348,17 +383,20 @@
 
             // リアルタイムカウントON/OFFの切り替え
             const handleToggle = () => {
-                if (realtimeToggle.value === 'on') {
+                if (realtimeToggle.checked) {
                     // ONの場合はリアルタイムでカウント
                     textInput.addEventListener('input', updateCounts);
-                    updateCounts(); // ONにした時に即時更新
                 } else {
                     // OFFの場合はリアルタイムカウントを停止
                     textInput.removeEventListener('input', updateCounts);
                 }
             };
             
-            // 初回読み込み時とON/OFF切り替え時に実行
+            // 初回読み込み時に即時更新
+            updateCounts();
+            handleToggle();
+            
+            // ON/OFF切り替え時に実行
             realtimeToggle.addEventListener('change', handleToggle);
             
             // カウントボタンのクリックイベント
@@ -387,10 +425,6 @@
                     resetModal.classList.add('hidden');
                 }
             });
-
-            // ページ読み込み時に初期状態をセット
-            handleToggle();
-            updateCounts();
         });
     </script>
 </body>
