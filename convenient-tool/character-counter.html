@@ -331,8 +331,8 @@
                 <span id="ig-count" class="count">0</span><span id="ig-max-count" class="max-count"> / 2,200</span>
             </div>
             <div class="result-box sns-count">
-                <h3>Facebook</h3>
-                <span id="fb-count" class="count">0</span><span id="fb-max-count" class="max-count"> / 16,000</span>
+                <h3>TikTok</h3>
+                <span id="tt-count" class="count">0</span><span id="tt-max-count" class="max-count"> / 2,200</span>
             </div>
         </div>
         
@@ -364,8 +364,8 @@
                 <dd>全角文字（日本語、句読点、記号など）は2ポイント、半角文字は1ポイントとしてカウントします。日本語など全角文字は140文字まで、英数字など半角文字は280文字まで入力可能であるため、全角を2文字として計算しています。</dd>
                 <dt>Instagram</dt>
                 <dd>文字数制限の目安として、単純な文字数を表示しています。最大文字数は2,200文字です。</dd>
-                <dt>Facebook</dt>
-                <dd>文字数制限の目安として、単純な文字数を表示しています。最大文字数は16,000文字です。</dd>
+                <dt>TikTok</dt>
+                <dd>文字数制限の目安として、単純な文字数を表示しています。最大文字数は2,200文字です。</dd>
             </dl>
         </div>
     </div>
@@ -402,7 +402,7 @@
             // SNSカウント用の要素
             const xCount = document.getElementById('x-count');
             const igCount = document.getElementById('ig-count');
-            const fbCount = document.getElementById('fb-count');
+            const ttCount = document.getElementById('tt-count');
 
             // 全角文字（日本語、句読点、記号など）を判定する正規表現
             const fullwidthRegex = /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff01-\uff5e\u4e00-\u9faf]/g;
@@ -437,11 +437,10 @@
                 const halfwidthChars = totalChars - fullwidthChars;
                 const xCountResult = fullwidthChars * 2 + halfwidthChars;
 
-                // Instagram: 2,200文字まで
+                // Instagram & TikTok: 2,200文字まで
                 const igCountResult = totalChars;
-                // Facebook: 16,000文字まで
-                const fbCountResult = totalChars;
-                
+                const ttCountResult = totalChars;
+
                 // 画面に結果を表示
                 charCount.textContent = totalChars;
                 noNewlineCharCount.textContent = charsNoNewline;
@@ -453,7 +452,7 @@
                 // SNSの文字数を表示
                 xCount.textContent = xCountResult;
                 igCount.textContent = igCountResult;
-                fbCount.textContent = fbCountResult;
+                ttCount.textContent = ttCountResult;
             };
 
             // リアルタイムカウントON/OFFの切り替え
