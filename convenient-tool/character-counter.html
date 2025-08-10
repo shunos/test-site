@@ -115,6 +115,22 @@
             font-weight: bold;
             color: #2e7d32;
         }
+        /* SNSカウント用のスタイル */
+        .result-box.sns-count {
+            background-color: #e3f2fd;
+        }
+        .result-box.sns-count h3 {
+            color: #1e88e5;
+        }
+        .result-box.sns-count .count {
+            color: #1565c0;
+        }
+        .result-box.sns-count .caption {
+            font-size: 0.8rem;
+            color: #555;
+            margin-top: 5px;
+            display: block;
+        }
         /* モーダルウィンドウのスタイル */
         .modal-overlay {
             position: fixed;
@@ -227,6 +243,20 @@
                 <h3>行数</h3>
                 <span id="line-count" class="count">0</span>
             </div>
+            <!-- SNS文字数カウントを追加 -->
+            <div class="result-box sns-count">
+                <h3>X（Twitter）</h3>
+                <span id="x-count" class="count">0</span><span id="x-max-count" class="max-count"> / 280</span>
+                <span class="caption">※全角文字は2文字としてカウント</span>
+            </div>
+            <div class="result-box sns-count">
+                <h3>Instagram</h3>
+                <span id="ig-count" class="count">0</span><span id="ig-max-count" class="max-count"> / 2,200</span>
+            </div>
+            <div class="result-box sns-count">
+                <h3>Facebook</h3>
+                <span id="fb-count" class="count">0</span><span id="fb-max-count" class="max-count"> / 16,000</span>
+            </div>
         </div>
     </div>
     
@@ -259,6 +289,14 @@
             const manuscriptPages = document.getElementById('manuscript-pages');
             const lineCount = document.getElementById('line-count');
 
+            // SNSカウント用の要素
+            const xCount = document.getElementById('x-count');
+            const igCount = document.getElementById('ig-count');
+            const fbCount = document.getElementById('fb-count');
+
+            // 全角文字を判定する正規表現（日本語、中国語、韓国語）
+            const fullwidthRegex = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff61-\uff9f]/g;
+
             // カウント処理を行うメイン関数
             const updateCounts = () => {
                 const text = textInput.value;
@@ -282,6 +320,17 @@
                 // 6. 行数をカウント
                 const lines = text.split('\n');
                 const lineCountResult = lines.length;
+
+                // 7. SNSの文字数をカウント
+                // X (Twitter): 全角2文字、半角1文字
+                const fullwidthChars = (text.match(fullwidthRegex) || []).length;
+                const halfwidthChars = totalChars - fullwidthChars;
+                const xCountResult = fullwidthChars * 2 + halfwidthChars;
+
+                // Instagram: 2,200文字まで
+                const igCountResult = totalChars;
+                // Facebook: 16,000文字まで
+                const fbCountResult = totalChars;
                 
                 // 画面に結果を表示
                 charCount.textContent = totalChars;
@@ -290,6 +339,11 @@
                 byteCount.textContent = bytes;
                 manuscriptPages.textContent = totalChars > 0 ? manuscriptCount : 0;
                 lineCount.textContent = text === '' ? 0 : lineCountResult; // テキストが空の場合は0行と表示
+
+                // SNSの文字数を表示
+                xCount.textContent = xCountResult;
+                igCount.textContent = igCountResult;
+                fbCount.textContent = fbCountResult;
             };
 
             // リアルタイムカウントON/OFFの切り替え
