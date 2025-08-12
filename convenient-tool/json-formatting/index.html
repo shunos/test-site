@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON整形ツール</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="container mx-auto p-8 bg-white rounded-xl shadow-lg w-full max-w-4xl">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">JSON整形ツール</h1>
+        <p class="text-center text-gray-600 mb-8">
+            整形したいJSONデータを入力してください。
+        </p>
+        
+        <!-- 入力エリアと出力エリアのコンテナ -->
+        <div class="flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-6 mb-6">
+            <!-- 入力エリア -->
+            <div class="w-full lg:w-1/2">
+                <label for="input-json" class="block text-sm font-medium text-gray-700 mb-2">入力JSON</label>
+                <textarea id="input-json" class="w-full h-80 p-4 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" placeholder='{"name": "John Doe", "age": 30, "isStudent": false, "courses": ["History", "Math"]}'></textarea>
+            </div>
+            
+            <!-- 出力エリア -->
+            <div class="w-full lg:w-1/2">
+                <label for="output-json" class="block text-sm font-medium text-gray-700 mb-2">出力JSON</label>
+                <textarea id="output-json" class="w-full h-80 p-4 bg-gray-50 border border-gray-300 rounded-lg" readonly></textarea>
+            </div>
+        </div>
+        
+        <!-- コントロールボタン -->
+        <div class="flex justify-center space-x-4">
+            <button id="format-button" class="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200">整形</button>
+            <button id="minify-button" class="px-6 py-3 bg-green-600 text-white font-bold rounded-lg shadow-md hover:bg-green-700 transition-colors duration-200">圧縮</button>
+        </div>
+
+        <!-- エラーメッセージ表示エリア -->
+        <div id="error-message" class="mt-6 p-4 bg-red-100 text-red-700 rounded-lg hidden">
+            <!-- エラーメッセージがここに追加されます -->
+        </div>
+
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputJson = document.getElementById('input-json');
+            const outputJson = document.getElementById('output-json');
+            const formatButton = document.getElementById('format-button');
+            const minifyButton = document.getElementById('minify-button');
+            const errorMessage = document.getElementById('error-message');
+            
+            /**
+             * JSONエラーメッセージを日本語に変換する関数
+             * ブラウザや環境によってエラーメッセージが異なるため、より一般的な表現にしました。
+             * @param {string} errorText - JSON.parseから返されたエラーメッセージ
+             * @returns {string} - 日本語のユーザーフレンドリーなエラーメッセージ
+             */
+            const getJapaneseErrorMessage = (errorText) => {
+                // 閉じ括弧が不足している場合に特化したエラーメッセージ
+                if (errorText.includes("Unexpected end of JSON input")) {
+                    return "JSONの終端が不正です。閉じ括弧（ } や ] ）が不足している可能性があります。";
+                }
+                
+                // カンマ、コロン、閉じ括弧の欠落など、文法エラーに対するメッセージ
+                else if (errorText.includes("Expected ','") || errorText.includes("Expected ':'") || errorText.includes("Expected '}'") || errorText.includes("Expected ']'")) {
+                    return "JSONの文法に誤りがあります。カンマ（,）やコロン（:）、閉じ括弧（}や]）の位置を確認してください。";
+                }
+                
+                // JSONのキーがダブルクォーテーションで囲まれていない場合のエラーメッセージ
+                else if (errorText.includes("Expected double-quoted property name") || errorText.includes("Expected property name")) {
+                    return "JSONのキーがダブルクォーテーションで囲まれていません。";
+                }
+                
+                // コメント（//）が原因のエラーメッセージ
+                else if (errorText.includes("Unexpected token '/'")) {
+                    return "JSONではコメント（//や/**/）は許可されていません。削除してください。";
+                }
+
+                // 不正な文字やトークンに対する一般的なメッセージ
+                else if (errorText.includes("Unexpected token") || errorText.includes("Invalid character")) {
+                    return "JSONの文法に誤りがあります。不正な文字やクォーテーションの位置を確認してください。";
+                }
+
+                // 補足的なエラー
+                else if (errorText.includes("Duplicate key")) {
+                    return "JSONオブジェクト内でキーが重複しています。";
+                }
+
+                // 上記に当てはまらない場合
+                else {
+                    return "JSONのパースに失敗しました。入力内容を確認してください。";
+                }
+            };
+            
+            /**
+             * エラーの位置を特定し、入力エリアにカーソルを移動させる関数
+             * @param {string} errorText - JSON.parseから返されたエラーメッセージ
+             */
+            const highlightErrorPosition = (errorText) => {
+                // エラーメッセージから「at position X」のXを正規表現で抽出
+                const match = errorText.match(/at position (\d+)/);
+                if (match && match[1]) {
+                    const position = parseInt(match[1], 10);
+                    inputJson.focus();
+                    // カーソルをエラー位置に移動
+                    inputJson.setSelectionRange(position, position);
+                }
+            };
+
+            /**
+             * JSONを整形する関数
+             * @param {string} jsonString - 整形するJSON文字列
+             * @returns {string} - 整形されたJSON文字列
+             */
+            const formatJson = (jsonString) => {
+                try {
+                    // JSON文字列をパースしてJavaScriptオブジェクトに変換
+                    const parsedJson = JSON.parse(jsonString);
+                    // オブジェクトを整形されたJSON文字列に変換
+                    return JSON.stringify(parsedJson, null, 2);
+                } catch (error) {
+                    // JSONパースエラーが発生した場合
+                    highlightErrorPosition(error.message); // エラー位置にカーソルを移動
+                    // 実際のエラーメッセージを追記して表示
+                    throw new Error(`[元のエラー] ${error.message}\n[日本語メッセージ] ${getJapaneseErrorMessage(error.message)}`);
+                }
+            };
+            
+            /**
+             * JSONを圧縮する関数
+             * @param {string} jsonString - 圧縮するJSON文字列
+             * @returns {string} - 圧縮されたJSON文字列
+             */
+            const minifyJson = (jsonString) => {
+                try {
+                    // JSON文字列をパースしてJavaScriptオブジェクトに変換
+                    const parsedJson = JSON.parse(jsonString);
+                    // オブジェクトを圧縮されたJSON文字列に変換
+                    return JSON.stringify(parsedJson);
+                } catch (error) {
+                    // JSONパースエラーが発生した場合
+                    highlightErrorPosition(error.message); // エラー位置にカーソルを移動
+                    // 実際のエラーメッセージを追記して表示
+                    throw new Error(`[元のエラー] ${error.message}\n[日本語メッセージ] ${getJapaneseErrorMessage(error.message)}`);
+                }
+            };
+
+            // エラーメッセージを表示する関数
+            const displayError = (message) => {
+                errorMessage.textContent = message;
+                errorMessage.classList.remove('hidden');
+            };
+
+            // エラーメッセージを非表示にする関数
+            const hideError = () => {
+                errorMessage.classList.add('hidden');
+            };
+
+            // 整形ボタンのクリックイベント
+            formatButton.addEventListener('click', () => {
+                hideError();
+                const jsonText = inputJson.value;
+                if (jsonText.trim() === "") {
+                    outputJson.value = "";
+                    return;
+                }
+                try {
+                    outputJson.value = formatJson(jsonText);
+                } catch (error) {
+                    displayError(error.message);
+                }
+            });
+
+            // 圧縮ボタンのクリックイベント
+            minifyButton.addEventListener('click', () => {
+                hideError();
+                const jsonText = inputJson.value;
+                if (jsonText.trim() === "") {
+                    outputJson.value = "";
+                    return;
+                }
+                try {
+                    outputJson.value = minifyJson(jsonText);
+                } catch (error) {
+                    displayError(error.message);
+                }
+            });
+
+            // 初期表示のために、サンプルJSONを整形しておく
+            if (inputJson.value) {
+                try {
+                    outputJson.value = formatJson(inputJson.value);
+                } catch (error) {
+                    displayError(error.message);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
