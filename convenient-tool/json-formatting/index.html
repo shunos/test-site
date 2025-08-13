@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON整形ツール</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        /* エラーメッセージエリアに改行を適用 */
+        #error-message {
+            white-space: pre-wrap;
+        }
+
+        /* 構文ハイライトのカラー定義 */
+        .json-key { color: #d14624; } /* キー */
+        .json-string { color: #177114; } /* 文字列 */
+        .json-number { color: #2422c5; } /* 数値 */
+        .json-boolean { color: #219d9b; } /* 真偽値 */
+        .json-null { color: #8e1022; } /* null */
+        .json-punctuation { color: #384249; } /* 記号 */
+        
+        /* 出力エリアの見た目を調整 */
+        .output-container {
+            overflow: auto;
+            font-family: monospace;
+            cursor: text;
+        }
+        
+        #output-json-text {
+            white-space: pre;
+        }
+
+        /* 階層表示（ツリービュー）用のスタイル */
+        .tree-view {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .tree-view ul {
+            list-style: none;
+            padding-left: 1.5rem; /* インデントを適用 */
+            margin: 0;
+        }
+
+        .tree-view li {
+            position: relative;
+        }
+        
+        .tree-view .key-container {
+            display: flex;
+            align-items: center;
+            padding: 0.2rem 0;
+            user-select: none;
+        }
+
+        .tree-view .key-container.clickable {
+            cursor: pointer;
+        }
+
+        .tree-view .key-container .toggle-icon {
+            margin-right: 0.5rem;
+            width: 1rem;
+            text-align: center;
+        }
+        
+        .tree-view .children {
+            display: none;
+        }
+        
+        .tree-view .expanded > .children {
+            display: block;
+        }
+        
+        .tree-view .value-type {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-left: 0.5rem;
+            font-style: italic;
+        }
+
+        /* コピー成功メッセージのスタイル */
+        .copied-message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #10b981;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            z-index: 1000;
+        }
+        .copied-message.show {
+            opacity: 1;
+        }
+
+        /* アイコンボタンのスタイルとツールチップのコンテナ */
+        .icon-button-container {
+            position: relative;
+            display: inline-block; /* ツールチップが正しく配置されるように */
+        }
+        
+        .icon-button {
+            padding: 0.5rem;
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(209, 213, 219, 0.5);
+            border-radius: 9999px; /* 完全な円形 */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            color: #4b5563;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        .icon-button:hover {
+            background-color: rgba(255, 255, 255, 1);
+            color: #1f2937;
+            transform: scale(1.05);
+        }
+
+        /* ツールチップのスタイル */
+        .tooltip-text {
+            visibility: hidden;
+            background-color: #374151; /* gray-700 */
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 120%; /* ボタンの上に配置 */
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.875rem; /* text-sm */
+            white-space: nowrap;
+        }
+
+        .icon-button-container:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* ツールチップの矢印 */
+        .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #374151 transparent transparent transparent;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="container mx-auto p-8 bg-white rounded-xl shadow-lg w-full max-w-4xl">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">JSON整形ツール</h1>
+        <p class="text-center text-gray-600 mb-8">
+            入力されたJSONデータを様々な形式に変換し、視覚的に確認するためのシンプルなアプリケーションです。<br>整形したいJSONデータを入力してください。
+        </p>
+        
+        <!-- 入力エリアと出力エリアのコンテナ -->
+        <div class="flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-6 mb-6">
+            <!-- 入力エリア -->
+            <div class="w-full lg:w-1/2 relative">
+                <label for="input-json" class="block text-sm font-medium text-gray-700 mb-2">入力JSON</label>
+                <textarea id="input-json" class="w-full h-80 p-4 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" placeholder='{"user": {"id": "u-001", "name": "山田 太郎", "is_active": true, "last_login": "2023-01-15T12:00:00Z", "preferences": {"theme": "dark", "language": "ja"}, "roles": ["admin", "editor"], "permissions": [{"resource": "posts", "level": "read_write"}, {"resource": "users", "level": "read"}]}}'></textarea>
+                <!-- クリアボタンのコンテナ -->
+                <div class="icon-button-container absolute top-4 right-4">
+                    <button id="clear-button" class="icon-button" aria-label="すべてクリア">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 6L6 18M6 6l12 12"/>
+                        </svg>
+                    </button>
+                    <span class="tooltip-text">すべてクリア</span>
+                </div>
+            </div>
+            
+            <!-- 出力エリア -->
+            <div class="w-full lg:w-1/2 relative">
+                <label for="output-container" class="block text-sm font-medium text-gray-700 mb-2">出力</label>
+                <div id="output-container" class="w-full h-80 p-4 bg-gray-50 border border-gray-300 rounded-lg output-container">
+                    <!-- 整形されたテキストまたは階層表示がここに追加されます -->
+                </div>
+                <!-- コピーボタンのコンテナ -->
+                <div class="icon-button-container absolute top-4 right-4">
+                    <button id="copy-button" class="icon-button" aria-label="出力内容をコピー">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                    </button>
+                    <span class="tooltip-text">出力内容をコピー</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- コントロールボタン -->
+        <div class="flex justify-center space-x-4 flex-wrap gap-2">
+            <button id="format-button" class="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200">整形</button>
+            <button id="minify-button" class="px-6 py-3 bg-green-600 text-white font-bold rounded-lg shadow-md hover:bg-green-700 transition-colors duration-200">圧縮</button>
+            <button id="hierarchical-button" class="px-6 py-3 bg-purple-600 text-white font-bold rounded-lg shadow-md hover:bg-purple-700 transition-colors duration-200">階層表示</button>
+        </div>
+
+        <!-- エラーメッセージ表示エリア -->
+        <div id="error-message" class="mt-6 p-4 bg-red-100 text-red-700 rounded-lg hidden">
+            <!-- エラーメッセージがここに追加されます -->
+        </div>
+
+        <!-- ツールの説明エリア -->
+        <div class="mt-12 p-8 bg-gray-50 rounded-xl">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">ツールの説明</h2>
+            <p class="text-gray-600 mb-6">
+                このJSON整形ツールは、入力されたJSONデータを様々な形式に変換し、視覚的に確認するためのシンプルなウェブアプリケーションです。開発者やデータ分析者にとって、複雑なJSONデータを簡単に読みやすくしたり、逆に通信効率を上げるために圧縮したりする際に役立ちます。
+            </p>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">機能詳細</h2>
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">1. 整形</h3>
+                    <p class="text-gray-600">
+                        JSONデータを人間が読みやすいように、インデント（字下げ）や改行を加えてきれいに整形します。さらに、構文に応じたカラーハイライトが適用されるため、キー、文字列、数値、真偽値、nullなどを一目で判別できます。文法エラーがある場合は、エラーメッセージと日本語での解説が表示され、問題の箇所が入力エリアでハイライトされます。
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">2. 圧縮</h3>
+                    <p class="text-gray-600">
+                        JSONデータからすべてのインデントと改行を削除し、データサイズを最小限に圧縮します。API通信などでデータを効率的に送受信したい場合に便利です。
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">3. 階層表示</h3>
+                    <p class="text-gray-600">
+                        JSONデータをツリー構造で表示します。オブジェクトや配列の階層を折りたたんだり展開したりできるため、ネストされた複雑なデータ構造を直感的に把握できます。
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">4. コピー</h3>
+                    <p class="text-gray-600">
+                        出力エリアに表示されている内容をクリップボードにコピーします。整形後のJSON、圧縮されたJSON、どちらの形式でもコピー可能です。
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">5. すべてクリア</h3>
+                    <p class="text-gray-600">
+                        入力エリアと出力エリアの内容、および表示されているエラーメッセージをすべてクリアし、初期状態に戻します。
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    
+    <!-- コピー成功メッセージ -->
+    <div id="copied-message" class="copied-message">コピーしました！</div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputJson = document.getElementById('input-json');
+            const outputContainer = document.getElementById('output-container');
+            const formatButton = document.getElementById('format-button');
+            const minifyButton = document.getElementById('minify-button');
+            const hierarchicalButton = document.getElementById('hierarchical-button');
+            const copyButton = document.getElementById('copy-button');
+            const clearButton = document.getElementById('clear-button');
+            const errorMessage = document.getElementById('error-message');
+            const copiedMessage = document.getElementById('copied-message');
+
+            let parsedJsonData = null; // パースされたJSONデータを保持する変数
+            let currentMode = null; // 現在の表示モードを追跡する変数
+
+            /**
+             * JSONエラーメッセージを日本語に変換する関数
+             * @param {string} errorText - JSON.parseから返されたエラーメッセージ
+             * @param {string} rawInput - 整形前の入力文字列
+             * @returns {string} - 日本語のユーザーフレンドリーなエラーメッセージ
+             */
+            const getJapaneseErrorMessage = (errorText, rawInput) => {
+                // 最後の要素の後に余分なカンマがあるケースを特定
+                const cleanInput = rawInput.replace(/\s+/g, '');
+                if (cleanInput.endsWith(',}') || cleanInput.endsWith(',]')) {
+                    return "オブジェクトまたは配列の末尾に、余分なカンマがあります。";
+                }
+                
+                if (errorText.includes("Unexpected token '/'")) {
+                    return "JSONではコメント（//や/**/）は許可されていません。削除してください。";
+                }
+                
+                // キーがダブルクォーテーションで囲まれていないケース
+                if (errorText.includes("Expected double-quoted property name") || errorText.includes("Expected property name or '}'")) {
+                    return "JSONのキーがダブルクォーテーションで囲まれていません。";
+                }
+
+                if (errorText.includes("Unexpected token")) {
+                    return "JSONの文法に誤りがあります。不正な文字やクォーテーションの位置を確認してください。";
+                }
+                
+                if (errorText.includes("Unexpected end of JSON input")) {
+                    return "JSONの文法に誤りがあります。オブジェクトまたは配列の閉じ括弧が不足しています。";
+                }
+                
+                if (errorText.includes("Expected ',' or ']' after array element")) {
+                    return "JSONの配列に不正な閉じ括弧（ } ）が使われています。";
+                }
+                
+                if (errorText.includes("Expected ':'")) {
+                    return "JSONの文法に誤りがあります。キーと値の間にコロン（:）がありません。";
+                }
+                
+                if (errorText.includes("Expected ',' or '}' after property value")) {
+                    return "JSONの文法に誤りがあります。オブジェクトの閉じ括弧（}）が不足しているか、値の後にカンマがありません。";
+                }
+                
+                return "JSONのパースに失敗しました。入力内容を確認してください。";
+            };
+            
+            /**
+             * エラーの位置を特定し、入力エリアにカーソルを移動させる関数
+             * @param {string} errorText - JSON.parseから返されたエラーメッセージ
+             */
+            const highlightErrorPosition = (errorText) => {
+                const match = errorText.match(/at position (\d+)/);
+                if (match && match[1]) {
+                    const position = parseInt(match[1], 10);
+                    inputJson.focus();
+                    inputJson.setSelectionRange(position, position);
+                }
+            };
+
+            /**
+             * JSON文字列を構文ハイライトする関数
+             * @param {string} jsonString - ハイライトするJSON文字列
+             * @returns {string} - HTMLタグが付加された文字列
+             */
+            const highlightJsonSyntax = (jsonString) => {
+                const regex = /(?:"(.*?)"(?=\s*:))|("(?:[^"\\]|\\.)*")|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|(\btrue\b|\bfalse\b|\bnull\b)|([\{\}\[\]:,])/g;
+
+                return jsonString.replace(regex, (match, key, string, number, booleanOrNull, punctuation) => {
+                    if (key) {
+                        return `<span class="json-key">"${key}"</span>`;
+                    } else if (string) {
+                        return `<span class="json-string">${match}</span>`;
+                    } else if (number) {
+                        return `<span class="json-number">${match}</span>`;
+                    } else if (booleanOrNull) {
+                        if (booleanOrNull === 'true' || booleanOrNull === 'false') {
+                            return `<span class="json-boolean">${match}</span>`;
+                        } else if (booleanOrNull === 'null') {
+                            return `<span class="json-null">${match}</span>`;
+                        }
+                    } else if (punctuation) {
+                        return `<span class="json-punctuation">${match}</span>`;
+                    }
+                    return match;
+                });
+            };
+
+            /**
+             * JSONを整形する関数
+             * @param {string} jsonString - 整形するJSON文字列
+             * @returns {string} - 整形されたHTML文字列
+             */
+            const formatJson = (jsonString) => {
+                try {
+                    parsedJsonData = JSON.parse(jsonString); // グローバル変数にデータを格納
+                    const formattedString = JSON.stringify(parsedJsonData, null, 2);
+                    return `<pre id="output-json-text">${highlightJsonSyntax(formattedString)}</pre>`;
+                } catch (error) {
+                    parsedJsonData = null; // 失敗したらデータをクリア
+                    highlightErrorPosition(error.message);
+                    const japaneseMessage = getJapaneseErrorMessage(error.message, jsonString);
+                    throw new Error(`[JSON Error]\n${error.message}\n\n[日本語メッセージ]\n${japaneseMessage}`);
+                }
+            };
+            
+            /**
+             * JSONを圧縮する関数
+             * @param {string} jsonString - 圧縮するJSON文字列
+             * @returns {string} - 圧縮されたJSON文字列
+             */
+            const minifyJson = (jsonString) => {
+                try {
+                    parsedJsonData = JSON.parse(jsonString); // グローバル変数にデータを格納
+                    return `<pre id="output-json-text">${JSON.stringify(parsedJsonData)}</pre>`;
+                } catch (error) {
+                    parsedJsonData = null; // 失敗したらデータをクリア
+                    highlightErrorPosition(error.message);
+                    const japaneseMessage = getJapaneseErrorMessage(error.message, jsonString);
+                    throw new Error(`[JSON Error]\n${error.message}\n\n[日本語メッセージ]\n${japaneseMessage}`);
+                }
+            };
+
+            /**
+             * JSONオブジェクトを階層表示（ツリービュー）に変換する関数
+             * @param {object} data - JSONオブジェクト
+             * @param {string|number|null} key - 現在のキー
+             * @returns {HTMLElement} - 生成されたリスト要素
+             */
+            const createHierarchicalView = (data, key = null) => {
+                const li = document.createElement('li');
+                
+                const keyContainer = document.createElement('div');
+                keyContainer.className = 'key-container';
+                li.appendChild(keyContainer);
+                
+                const isExpandable = typeof data === 'object' && data !== null;
+
+                if (isExpandable) {
+                    keyContainer.classList.add('clickable');
+
+                    const toggleIcon = document.createElement('span');
+                    toggleIcon.className = 'toggle-icon';
+                    toggleIcon.textContent = '▶';
+
+                    keyContainer.appendChild(toggleIcon);
+                    
+                    keyContainer.addEventListener('click', () => {
+                        li.classList.toggle('expanded');
+                        toggleIcon.textContent = li.classList.contains('expanded') ? '▼' : '▶';
+                    });
+                } else {
+                    const emptyIcon = document.createElement('span');
+                    emptyIcon.className = 'toggle-icon';
+                    keyContainer.appendChild(emptyIcon);
+                }
+
+                if (key !== null) {
+                    const keySpan = document.createElement('span');
+                    keySpan.innerHTML = `<span class="json-key">"${key}"</span>:`;
+                    keyContainer.appendChild(keySpan);
+                }
+
+                if (isExpandable) {
+                    const children = document.createElement('ul');
+                    children.className = 'children';
+                    
+                    if (Array.isArray(data)) {
+                        keyContainer.innerHTML += `<span class="value-type">Array[${data.length}]</span>`;
+                        data.forEach((item, index) => {
+                            children.appendChild(createHierarchicalView(item, index));
+                        });
+                    } else {
+                        keyContainer.innerHTML += `<span class="value-type">Object</span>`;
+                        Object.keys(data).forEach(childKey => {
+                            children.appendChild(createHierarchicalView(data[childKey], childKey));
+                        });
+                    }
+                    li.appendChild(children);
+                } else {
+                    let valueSpan = document.createElement('span');
+                    let valueClass = '';
+                    let valueText = '';
+                    
+                    if (typeof data === 'string') {
+                        valueClass = 'json-string';
+                        valueText = `"${data}"`;
+                    } else if (typeof data === 'number') {
+                        valueClass = 'json-number';
+                        valueText = data;
+                    } else if (typeof data === 'boolean') {
+                        valueClass = 'json-boolean';
+                        valueText = data;
+                    } else if (data === null) {
+                        valueClass = 'json-null';
+                        valueText = 'null';
+                    }
+                    
+                    valueSpan.className = valueClass;
+                    valueSpan.textContent = valueText;
+                    keyContainer.appendChild(valueSpan);
+                }
+                
+                return li;
+            };
+
+            /**
+             * クリップボードにテキストをコピーする関数
+             * @param {string} text - コピーするテキスト
+             */
+            const copyToClipboard = (text) => {
+                if (!text) {
+                    return;
+                }
+                const tempTextArea = document.createElement('textarea');
+                tempTextArea.value = text;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                try {
+                    document.execCommand('copy');
+                    showCopiedMessage();
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                } finally {
+                    document.body.removeChild(tempTextArea);
+                }
+            };
+            
+            /**
+             * コピー成功メッセージを表示する関数
+             */
+            const showCopiedMessage = () => {
+                copiedMessage.classList.add('show');
+                setTimeout(() => {
+                    copiedMessage.classList.remove('show');
+                }, 1500);
+            };
+
+            // エラーメッセージを表示する関数
+            const displayError = (message) => {
+                errorMessage.textContent = message;
+                errorMessage.classList.remove('hidden');
+                outputContainer.innerHTML = "";
+                parsedJsonData = null; // 失敗したらデータをクリア
+                currentMode = null; // エラー時はモードもクリア
+            };
+
+            // エラーメッセージを非表示にする関数
+            const hideError = () => {
+                errorMessage.classList.add('hidden');
+            };
+
+            // 整形ボタンのクリックイベント
+            formatButton.addEventListener('click', () => {
+                hideError();
+                const jsonText = inputJson.value;
+                if (jsonText.trim() === "") {
+                    outputContainer.innerHTML = "";
+                    return;
+                }
+                try {
+                    outputContainer.innerHTML = formatJson(jsonText);
+                    currentMode = 'format';
+                } catch (error) {
+                    displayError(error.message);
+                }
+            });
+
+            // 圧縮ボタンのクリックイベント
+            minifyButton.addEventListener('click', () => {
+                hideError();
+                const jsonText = inputJson.value;
+                if (jsonText.trim() === "") {
+                    outputContainer.innerHTML = "";
+                    return;
+                }
+                try {
+                    outputContainer.innerHTML = minifyJson(jsonText);
+                    currentMode = 'minify';
+                } catch (error) {
+                    displayError(error.message);
+                }
+            });
+
+            // 階層表示ボタンのクリックイベント
+            hierarchicalButton.addEventListener('click', () => {
+                hideError();
+                const jsonText = inputJson.value;
+                if (jsonText.trim() === "") {
+                    outputContainer.innerHTML = "";
+                    return;
+                }
+                try {
+                    parsedJsonData = JSON.parse(jsonText); // グローバル変数にデータを格納
+                    const rootUl = document.createElement('ul');
+                    rootUl.className = 'tree-view';
+                    const rootLi = createHierarchicalView(parsedJsonData);
+                    rootLi.classList.add('expanded');
+                    rootUl.appendChild(rootLi);
+                    outputContainer.innerHTML = "";
+                    outputContainer.appendChild(rootUl);
+                    currentMode = 'hierarchical';
+                } catch (error) {
+                    highlightErrorPosition(error.message);
+                    const japaneseMessage = getJapaneseErrorMessage(error.message, jsonText);
+                    displayError(`[JSON Error]\n${error.message}\n\n[日本語メッセージ]\n${japaneseMessage}`);
+                }
+            });
+
+            // コピーボタンのクリックイベント
+            copyButton.addEventListener('click', () => {
+                if (parsedJsonData === null) {
+                    // 有効なJSONがない場合は何もしない
+                    return;
+                }
+
+                let textToCopy = "";
+                if (currentMode === 'minify') {
+                    textToCopy = JSON.stringify(parsedJsonData);
+                } else {
+                    // 整形、階層表示の場合は整形されたJSONをコピー
+                    textToCopy = JSON.stringify(parsedJsonData, null, 2);
+                }
+                
+                copyToClipboard(textToCopy);
+            });
+            
+            // すべてクリアボタンのクリックイベント
+            clearButton.addEventListener('click', () => {
+                inputJson.value = "";
+                outputContainer.innerHTML = "";
+                hideError();
+                parsedJsonData = null;
+                currentMode = null;
+            });
+
+            // 初期表示のために、サンプルJSONを整形してハイライトしておく
+            if (inputJson.value) {
+                try {
+                    outputContainer.innerHTML = formatJson(inputJson.value);
+                    currentMode = 'format';
+                } catch (error) {
+                    displayError(error.message);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
