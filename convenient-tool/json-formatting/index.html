@@ -67,7 +67,7 @@
             const getJapaneseErrorMessage = (errorText) => {
                 // 異常ケース7: コメントが存在する
                 if (errorText.includes("Unexpected token '/'")) {
-                    return "JSONの文法に誤りがあります。コメントは許可されていません。";
+                    return "JSONではコメント（//や/**/）は許可されていません。削除してください。";
                 }
                 
                 // 異常ケース1: 値の最後にカンマがある
