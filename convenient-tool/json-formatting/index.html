@@ -15,6 +15,22 @@
         #error-message {
             white-space: pre-wrap;
         }
+
+        /* 構文ハイライトのカラー定義 */
+        .json-key { color: #d14624; } /* キー */
+        .json-string { color: #177114; } /* 文字列 */
+        .json-number { color: #2422c5; } /* 数値 */
+        .json-boolean { color: #219d9b; } /* 真偽値 */
+        .json-null { color: #8e1022; } /* null */
+        .json-punctuation { color: #384249; } /* 記号 */
+        
+        /* 出力エリアの見た目を調整 */
+        #output-json-container {
+            overflow: auto;
+            white-space: pre;
+            font-family: monospace;
+            cursor: text;
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
@@ -34,8 +50,8 @@
             
             <!-- 出力エリア -->
             <div class="w-full lg:w-1/2">
-                <label for="output-json" class="block text-sm font-medium text-gray-700 mb-2">出力JSON</label>
-                <textarea id="output-json" class="w-full h-80 p-4 bg-gray-50 border border-gray-300 rounded-lg" readonly></textarea>
+                <label for="output-json-container" class="block text-sm font-medium text-gray-700 mb-2">出力JSON</label>
+                <pre id="output-json-container" class="w-full h-80 p-4 bg-gray-50 border border-gray-300 rounded-lg"></pre>
             </div>
         </div>
         
@@ -49,12 +65,13 @@
         <div id="error-message" class="mt-6 p-4 bg-red-100 text-red-700 rounded-lg hidden">
             <!-- エラーメッセージがここに追加されます -->
         </div>
+
     </div>
     
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const inputJson = document.getElementById('input-json');
-            const outputJson = document.getElementById('output-json');
+            const outputJsonContainer = document.getElementById('output-json-container');
             const formatButton = document.getElementById('format-button');
             const minifyButton = document.getElementById('minify-button');
             const errorMessage = document.getElementById('error-message');
@@ -125,20 +142,53 @@
             };
 
             /**
+             * JSON文字列を構文ハイライトする関数
+             * @param {string} jsonString - ハイライトするJSON文字列
+             * @returns {string} - HTMLタグが付加された文字列
+             */
+            const highlightJsonSyntax = (jsonString) => {
+                // キー、文字列、数値、真偽値、null、記号を全てキャプチャする単一の正規表現
+                const regex = /(?:"(.*?)"(?=\s*:))|("(?:[^"\\]|\\.)*")|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|(\btrue\b|\bfalse\b|\bnull\b)|([\{\}\[\]:,])/g;
+
+                return jsonString.replace(regex, (match, key, string, number, booleanOrNull, punctuation) => {
+                    // 正規表現のキャプチャグループで、どの要素がマッチしたかを判別
+                    if (key) {
+                        return `<span class="json-key">"${key}"</span>`;
+                    } else if (string) {
+                        return `<span class="json-string">${match}</span>`;
+                    } else if (number) {
+                        return `<span class="json-number">${match}</span>`;
+                    } else if (booleanOrNull) {
+                        if (booleanOrNull === 'true' || booleanOrNull === 'false') {
+                            return `<span class="json-boolean">${match}</span>`;
+                        } else if (booleanOrNull === 'null') {
+                            return `<span class="json-null">${match}</span>`;
+                        }
+                    } else if (punctuation) {
+                        return `<span class="json-punctuation">${match}</span>`;
+                    }
+                    return match;
+                });
+            };
+
+            /**
              * JSONを整形する関数
              * @param {string} jsonString - 整形するJSON文字列
-             * @returns {string} - 整形されたJSON文字列
+             * @returns {string} - 整形されたHTML文字列
              */
             const formatJson = (jsonString) => {
                 try {
                     // JSON文字列をパースしてJavaScriptオブジェクトに変換
                     const parsedJson = JSON.parse(jsonString);
                     // オブジェクトを整形されたJSON文字列に変換
-                    return JSON.stringify(parsedJson, null, 2);
+                    const formattedString = JSON.stringify(parsedJson, null, 2);
+                    // 構文ハイライトを適用
+                    return highlightJsonSyntax(formattedString);
                 } catch (error) {
-                    // JSONパースエラーが発生した場合、元のエラーメッセージをスローする
+                    // JSONパースエラーが発生した場合
                     highlightErrorPosition(error.message); // エラー位置にカーソルを移動
                     const japaneseMessage = getJapaneseErrorMessage(error.message);
+                    // 独自の形式でエラーメッセージを生成し、スローする
                     throw new Error(`[JSON Error]\n${error.message}\n\n[日本語メッセージ]\n${japaneseMessage}`);
                 }
             };
@@ -150,13 +200,10 @@
              */
             const minifyJson = (jsonString) => {
                 try {
-                    // JSON文字列をパースしてJavaScriptオブジェクトに変換
                     const parsedJson = JSON.parse(jsonString);
-                    // オブジェクトを圧縮されたJSON文字列に変換
                     return JSON.stringify(parsedJson);
                 } catch (error) {
-                    // JSONパースエラーが発生した場合、元のエラーメッセージをスローする
-                    highlightErrorPosition(error.message); // エラー位置にカーソルを移動
+                    highlightErrorPosition(error.message);
                     const japaneseMessage = getJapaneseErrorMessage(error.message);
                     throw new Error(`[JSON Error]\n${error.message}\n\n[日本語メッセージ]\n${japaneseMessage}`);
                 }
@@ -178,13 +225,14 @@
                 hideError();
                 const jsonText = inputJson.value;
                 if (jsonText.trim() === "") {
-                    outputJson.value = "";
+                    outputJsonContainer.innerHTML = "";
                     return;
                 }
                 try {
-                    outputJson.value = formatJson(jsonText);
+                    outputJsonContainer.innerHTML = formatJson(jsonText);
                 } catch (error) {
                     displayError(error.message);
+                    outputJsonContainer.innerHTML = ""; // エラー時は出力エリアをクリア
                 }
             });
 
@@ -193,15 +241,25 @@
                 hideError();
                 const jsonText = inputJson.value;
                 if (jsonText.trim() === "") {
-                    outputJson.value = "";
+                    outputJsonContainer.innerHTML = "";
                     return;
                 }
                 try {
-                    outputJson.value = minifyJson(jsonText);
+                    outputJsonContainer.textContent = minifyJson(jsonText);
+                } catch (error) {
+                    displayError(error.message);
+                    outputJsonContainer.innerHTML = ""; // エラー時は出力エリアをクリア
+                }
+            });
+            
+            // 初期表示のために、サンプルJSONを整形してハイライトしておく
+            if (inputJson.value) {
+                try {
+                    outputJsonContainer.innerHTML = formatJson(inputJson.value);
                 } catch (error) {
                     displayError(error.message);
                 }
-            });
+            }
         });
     </script>
 </body>
