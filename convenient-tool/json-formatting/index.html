@@ -65,6 +65,11 @@
              * @returns {string} - 日本語のユーザーフレンドリーなエラーメッセージ
              */
             const getJapaneseErrorMessage = (errorText) => {
+                // 異常ケース7: コメントが存在する
+                if (errorText.includes("Unexpected token '/'")) {
+                    return "JSONの文法に誤りがあります。コメントは許可されていません。";
+                }
+                
                 // 異常ケース1: 値の最後にカンマがある
                 if (errorText.includes("Expected double-quoted property name") && errorText.includes("at position")) {
                     return "JSONの文法に誤りがあります。値の後にカンマ（,）を置くことはできません。";
@@ -72,10 +77,6 @@
                 
                 // 異常ケース2: 値がクォーテーションで囲まれていない
                 if (errorText.includes("Unexpected token")) {
-                    // コメントエラーを優先して判定
-                    if (errorText.includes("Unexpected token '/'")) {
-                        return "JSONの文法に誤りがあります。コメントは許可されていません。";
-                    }
                     return "JSONの文法に誤りがあります。不正な文字やクォーテーションの位置を確認してください。";
                 }
                 
