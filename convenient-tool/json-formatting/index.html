@@ -10,6 +10,11 @@
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
         }
+
+        /* エラーメッセージエリアに改行を適用 */
+        #error-message {
+            white-space: pre-wrap;
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
@@ -44,7 +49,6 @@
         <div id="error-message" class="mt-6 p-4 bg-red-100 text-red-700 rounded-lg hidden">
             <!-- エラーメッセージがここに追加されます -->
         </div>
-
     </div>
     
     <script>
@@ -57,45 +61,51 @@
             
             /**
              * JSONエラーメッセージを日本語に変換する関数
-             * ブラウザや環境によってエラーメッセージが異なるため、より一般的な表現にしました。
              * @param {string} errorText - JSON.parseから返されたエラーメッセージ
              * @returns {string} - 日本語のユーザーフレンドリーなエラーメッセージ
              */
             const getJapaneseErrorMessage = (errorText) => {
-                // 閉じ括弧が不足している場合に特化したエラーメッセージ
-                if (errorText.includes("Unexpected end of JSON input")) {
-                    return "JSONの終端が不正です。閉じ括弧（ } や ] ）が不足している可能性があります。";
+                // 異常ケース1: 値の最後にカンマがある
+                if (errorText.includes("Expected double-quoted property name") && errorText.includes("at position")) {
+                    return "JSONの文法に誤りがあります。値の後にカンマ（,）を置くことはできません。";
                 }
                 
-                // カンマ、コロン、閉じ括弧の欠落など、文法エラーに対するメッセージ
-                else if (errorText.includes("Expected ','") || errorText.includes("Expected ':'") || errorText.includes("Expected '}'") || errorText.includes("Expected ']'")) {
-                    return "JSONの文法に誤りがあります。カンマ（,）やコロン（:）、閉じ括弧（}や]）の位置を確認してください。";
+                // 異常ケース2: 値がクォーテーションで囲まれていない
+                if (errorText.includes("Unexpected token")) {
+                    // コメントエラーを優先して判定
+                    if (errorText.includes("Unexpected token '/'")) {
+                        return "JSONの文法に誤りがあります。コメントは許可されていません。";
+                    }
+                    return "JSONの文法に誤りがあります。不正な文字やクォーテーションの位置を確認してください。";
                 }
                 
-                // JSONのキーがダブルクォーテーションで囲まれていない場合のエラーメッセージ
-                else if (errorText.includes("Expected double-quoted property name") || errorText.includes("Expected property name")) {
+                // 異常ケース3: キーがクォーテーションで囲まれていない
+                if (errorText.includes("Expected property name or '}'")) {
                     return "JSONのキーがダブルクォーテーションで囲まれていません。";
                 }
                 
-                // コメント（//）が原因のエラーメッセージ
-                else if (errorText.includes("Unexpected token '/'")) {
-                    return "JSONではコメント（//や/**/）は許可されていません。削除してください。";
+                // 異常ケース4: 閉じ括弧が不足している
+                if (errorText.includes("Unexpected end of JSON input")) {
+                    return "JSONの文法に誤りがあります。オブジェクトまたは配列の閉じ括弧が不足しています。";
                 }
-
-                // 不正な文字やトークンに対する一般的なメッセージ
-                else if (errorText.includes("Unexpected token") || errorText.includes("Invalid character")) {
-                    return "JSONの文法に誤りがあります。不正な文字やクォーテーションの位置を確認してください。";
+                
+                // 異常ケース5: 不適切な括弧の組み合わせ
+                if (errorText.includes("Expected ',' or ']' after array element")) {
+                    return "JSONの配列に不正な閉じ括弧（ } ）が使われています。";
                 }
-
-                // 補足的なエラー
-                else if (errorText.includes("Duplicate key")) {
-                    return "JSONオブジェクト内でキーが重複しています。";
+                
+                // 異常ケース6: キーと値の間にコロンがない
+                if (errorText.includes("Expected ':'")) {
+                    return "JSONの文法に誤りがあります。キーと値の間にコロン（:）がありません。";
+                }
+                
+                // 異常ケース4の別パターン: オブジェクトの閉じ括弧が不足している場合
+                if (errorText.includes("Expected ',' or '}' after property value")) {
+                    return "JSONの文法に誤りがあります。オブジェクトの閉じ括弧（}）が不足しているか、値の後にカンマがありません。";
                 }
 
                 // 上記に当てはまらない場合
-                else {
-                    return "JSONのパースに失敗しました。入力内容を確認してください。";
-                }
+                return "JSONのパースに失敗しました。入力内容を確認してください。";
             };
             
             /**
@@ -125,10 +135,10 @@
                     // オブジェクトを整形されたJSON文字列に変換
                     return JSON.stringify(parsedJson, null, 2);
                 } catch (error) {
-                    // JSONパースエラーが発生した場合
+                    // JSONパースエラーが発生した場合、元のエラーメッセージをスローする
                     highlightErrorPosition(error.message); // エラー位置にカーソルを移動
-                    // 実際のエラーメッセージを追記して表示
-                    throw new Error(`[元のエラー] ${error.message}\n[日本語メッセージ] ${getJapaneseErrorMessage(error.message)}`);
+                    const japaneseMessage = getJapaneseErrorMessage(error.message);
+                    throw new Error(`[JSON Error]\n${error.message}\n\n[日本語メッセージ]\n${japaneseMessage}`);
                 }
             };
             
@@ -144,10 +154,10 @@
                     // オブジェクトを圧縮されたJSON文字列に変換
                     return JSON.stringify(parsedJson);
                 } catch (error) {
-                    // JSONパースエラーが発生した場合
+                    // JSONパースエラーが発生した場合、元のエラーメッセージをスローする
                     highlightErrorPosition(error.message); // エラー位置にカーソルを移動
-                    // 実際のエラーメッセージを追記して表示
-                    throw new Error(`[元のエラー] ${error.message}\n[日本語メッセージ] ${getJapaneseErrorMessage(error.message)}`);
+                    const japaneseMessage = getJapaneseErrorMessage(error.message);
+                    throw new Error(`[JSON Error]\n${error.message}\n\n[日本語メッセージ]\n${japaneseMessage}`);
                 }
             };
 
@@ -191,15 +201,6 @@
                     displayError(error.message);
                 }
             });
-
-            // 初期表示のために、サンプルJSONを整形しておく
-            if (inputJson.value) {
-                try {
-                    outputJson.value = formatJson(inputJson.value);
-                } catch (error) {
-                    displayError(error.message);
-                }
-            }
         });
     </script>
 </body>
