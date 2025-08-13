@@ -31,6 +31,24 @@
             font-family: monospace;
             cursor: text;
         }
+
+        /* コピー成功メッセージのスタイル */
+        .copied-message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #10b981;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .copied-message.show {
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
@@ -59,6 +77,8 @@
         <div class="flex justify-center space-x-4">
             <button id="format-button" class="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200">整形</button>
             <button id="minify-button" class="px-6 py-3 bg-green-600 text-white font-bold rounded-lg shadow-md hover:bg-green-700 transition-colors duration-200">圧縮</button>
+            <button id="copy-button" class="px-6 py-3 bg-gray-500 text-white font-bold rounded-lg shadow-md hover:bg-gray-600 transition-colors duration-200">コピー</button>
+            <button id="clear-button" class="px-6 py-3 bg-red-600 text-white font-bold rounded-lg shadow-md hover:bg-red-700 transition-colors duration-200">すべてクリア</button>
         </div>
 
         <!-- エラーメッセージ表示エリア -->
@@ -68,61 +88,58 @@
 
     </div>
     
+    <!-- コピー成功メッセージ -->
+    <div id="copied-message" class="copied-message">コピーしました！</div>
+    
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const inputJson = document.getElementById('input-json');
             const outputJsonContainer = document.getElementById('output-json-container');
             const formatButton = document.getElementById('format-button');
             const minifyButton = document.getElementById('minify-button');
+            const copyButton = document.getElementById('copy-button');
+            const clearButton = document.getElementById('clear-button');
             const errorMessage = document.getElementById('error-message');
-            
+            const copiedMessage = document.getElementById('copied-message');
+
             /**
              * JSONエラーメッセージを日本語に変換する関数
              * @param {string} errorText - JSON.parseから返されたエラーメッセージ
              * @returns {string} - 日本語のユーザーフレンドリーなエラーメッセージ
              */
             const getJapaneseErrorMessage = (errorText) => {
-                // 異常ケース7: コメントが存在する
                 if (errorText.includes("Unexpected token '/'")) {
                     return "JSONではコメント（//や/**/）は許可されていません。削除してください。";
                 }
                 
-                // 異常ケース1: 値の最後にカンマがある
                 if (errorText.includes("Expected double-quoted property name") && errorText.includes("at position")) {
                     return "JSONの文法に誤りがあります。値の後にカンマ（,）を置くことはできません。";
                 }
                 
-                // 異常ケース2: 値がクォーテーションで囲まれていない
                 if (errorText.includes("Unexpected token")) {
                     return "JSONの文法に誤りがあります。不正な文字やクォーテーションの位置を確認してください。";
                 }
                 
-                // 異常ケース3: キーがクォーテーションで囲まれていない
                 if (errorText.includes("Expected property name or '}'")) {
                     return "JSONのキーがダブルクォーテーションで囲まれていません。";
                 }
                 
-                // 異常ケース4: 閉じ括弧が不足している
                 if (errorText.includes("Unexpected end of JSON input")) {
                     return "JSONの文法に誤りがあります。オブジェクトまたは配列の閉じ括弧が不足しています。";
                 }
                 
-                // 異常ケース5: 不適切な括弧の組み合わせ
                 if (errorText.includes("Expected ',' or ']' after array element")) {
                     return "JSONの配列に不正な閉じ括弧（ } ）が使われています。";
                 }
                 
-                // 異常ケース6: キーと値の間にコロンがない
                 if (errorText.includes("Expected ':'")) {
                     return "JSONの文法に誤りがあります。キーと値の間にコロン（:）がありません。";
                 }
                 
-                // 異常ケース4の別パターン: オブジェクトの閉じ括弧が不足している場合
                 if (errorText.includes("Expected ',' or '}' after property value")) {
                     return "JSONの文法に誤りがあります。オブジェクトの閉じ括弧（}）が不足しているか、値の後にカンマがありません。";
                 }
 
-                // 上記に当てはまらない場合
                 return "JSONのパースに失敗しました。入力内容を確認してください。";
             };
             
@@ -131,12 +148,10 @@
              * @param {string} errorText - JSON.parseから返されたエラーメッセージ
              */
             const highlightErrorPosition = (errorText) => {
-                // エラーメッセージから「at position X」のXを正規表現で抽出
                 const match = errorText.match(/at position (\d+)/);
                 if (match && match[1]) {
                     const position = parseInt(match[1], 10);
                     inputJson.focus();
-                    // カーソルをエラー位置に移動
                     inputJson.setSelectionRange(position, position);
                 }
             };
@@ -147,11 +162,9 @@
              * @returns {string} - HTMLタグが付加された文字列
              */
             const highlightJsonSyntax = (jsonString) => {
-                // キー、文字列、数値、真偽値、null、記号を全てキャプチャする単一の正規表現
                 const regex = /(?:"(.*?)"(?=\s*:))|("(?:[^"\\]|\\.)*")|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|(\btrue\b|\bfalse\b|\bnull\b)|([\{\}\[\]:,])/g;
 
                 return jsonString.replace(regex, (match, key, string, number, booleanOrNull, punctuation) => {
-                    // 正規表現のキャプチャグループで、どの要素がマッチしたかを判別
                     if (key) {
                         return `<span class="json-key">"${key}"</span>`;
                     } else if (string) {
@@ -178,17 +191,12 @@
              */
             const formatJson = (jsonString) => {
                 try {
-                    // JSON文字列をパースしてJavaScriptオブジェクトに変換
                     const parsedJson = JSON.parse(jsonString);
-                    // オブジェクトを整形されたJSON文字列に変換
                     const formattedString = JSON.stringify(parsedJson, null, 2);
-                    // 構文ハイライトを適用
                     return highlightJsonSyntax(formattedString);
                 } catch (error) {
-                    // JSONパースエラーが発生した場合
-                    highlightErrorPosition(error.message); // エラー位置にカーソルを移動
+                    highlightErrorPosition(error.message);
                     const japaneseMessage = getJapaneseErrorMessage(error.message);
-                    // 独自の形式でエラーメッセージを生成し、スローする
                     throw new Error(`[JSON Error]\n${error.message}\n\n[日本語メッセージ]\n${japaneseMessage}`);
                 }
             };
@@ -207,6 +215,38 @@
                     const japaneseMessage = getJapaneseErrorMessage(error.message);
                     throw new Error(`[JSON Error]\n${error.message}\n\n[日本語メッセージ]\n${japaneseMessage}`);
                 }
+            };
+            
+            /**
+             * クリップボードにテキストをコピーする関数
+             * @param {string} text - コピーするテキスト
+             */
+            const copyToClipboard = (text) => {
+                if (!text) {
+                    return;
+                }
+                const tempTextArea = document.createElement('textarea');
+                tempTextArea.value = text;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                try {
+                    document.execCommand('copy');
+                    showCopiedMessage();
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                } finally {
+                    document.body.removeChild(tempTextArea);
+                }
+            };
+            
+            /**
+             * コピー成功メッセージを表示する関数
+             */
+            const showCopiedMessage = () => {
+                copiedMessage.classList.add('show');
+                setTimeout(() => {
+                    copiedMessage.classList.remove('show');
+                }, 1500);
             };
 
             // エラーメッセージを表示する関数
@@ -232,7 +272,7 @@
                     outputJsonContainer.innerHTML = formatJson(jsonText);
                 } catch (error) {
                     displayError(error.message);
-                    outputJsonContainer.innerHTML = ""; // エラー時は出力エリアをクリア
+                    outputJsonContainer.innerHTML = "";
                 }
             });
 
@@ -245,13 +285,27 @@
                     return;
                 }
                 try {
+                    // 圧縮はハイライトしないため、innerHTMLではなくtextContentを使用
                     outputJsonContainer.textContent = minifyJson(jsonText);
                 } catch (error) {
                     displayError(error.message);
-                    outputJsonContainer.innerHTML = ""; // エラー時は出力エリアをクリア
+                    outputJsonContainer.innerHTML = "";
                 }
             });
+
+            // コピーボタンのクリックイベント
+            copyButton.addEventListener('click', () => {
+                const textToCopy = outputJsonContainer.textContent;
+                copyToClipboard(textToCopy);
+            });
             
+            // すべてクリアボタンのクリックイベント
+            clearButton.addEventListener('click', () => {
+                inputJson.value = "";
+                outputJsonContainer.innerHTML = "";
+                hideError();
+            });
+
             // 初期表示のために、サンプルJSONを整形してハイライトしておく
             if (inputJson.value) {
                 try {
