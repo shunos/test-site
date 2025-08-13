@@ -38,17 +38,20 @@
         /* 階層表示（ツリービュー）用のスタイル */
         .tree-view {
             list-style: none;
-            padding-left: 1.5rem;
+            padding: 0;
+            margin: 0;
+        }
+
+        .tree-view ul {
+            list-style: none;
+            padding-left: 1.5rem; /* インデントを適用 */
+            margin: 0;
         }
 
         .tree-view li {
             position: relative;
         }
-
-        .tree-view li:not(:last-child) {
-            border-left: 1px solid #e5e7eb;
-        }
-
+        
         .tree-view .key-container {
             display: flex;
             align-items: center;
@@ -113,7 +116,7 @@
             <!-- 入力エリア -->
             <div class="w-full lg:w-1/2">
                 <label for="input-json" class="block text-sm font-medium text-gray-700 mb-2">入力JSON</label>
-                <textarea id="input-json" class="w-full h-80 p-4 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" placeholder='{"name": "John Doe", "age": 30, "isStudent": false, "courses": ["History", "Math", {"name": "Physics", "credits": 4}], "address": null}'></textarea>
+                <textarea id="input-json" class="w-full h-80 p-4 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" placeholder='{"user": {"id": "u-001", "name": "山田 太郎", "is_active": true, "last_login": "2023-01-15T12:00:00Z", "preferences": {"theme": "dark", "language": "ja"}, "roles": ["admin", "editor"], "permissions": [{"resource": "posts", "level": "read_write"}, {"resource": "users", "level": "read"}]}}'></textarea>
             </div>
             
             <!-- 出力エリア -->
@@ -155,6 +158,9 @@
             const clearButton = document.getElementById('clear-button');
             const errorMessage = document.getElementById('error-message');
             const copiedMessage = document.getElementById('copied-message');
+
+            let parsedJsonData = null; // パースされたJSONデータを保持する変数
+            let currentMode = null; // 現在の表示モードを追跡する変数
 
             /**
              * JSONエラーメッセージを日本語に変換する関数
@@ -241,10 +247,11 @@
              */
             const formatJson = (jsonString) => {
                 try {
-                    const parsedJson = JSON.parse(jsonString);
-                    const formattedString = JSON.stringify(parsedJson, null, 2);
+                    parsedJsonData = JSON.parse(jsonString); // グローバル変数にデータを格納
+                    const formattedString = JSON.stringify(parsedJsonData, null, 2);
                     return `<pre id="output-json-text">${highlightJsonSyntax(formattedString)}</pre>`;
                 } catch (error) {
+                    parsedJsonData = null; // 失敗したらデータをクリア
                     highlightErrorPosition(error.message);
                     const japaneseMessage = getJapaneseErrorMessage(error.message);
                     throw new Error(`[JSON Error]\n${error.message}\n\n[日本語メッセージ]\n${japaneseMessage}`);
@@ -258,9 +265,10 @@
              */
             const minifyJson = (jsonString) => {
                 try {
-                    const parsedJson = JSON.parse(jsonString);
-                    return `<pre id="output-json-text">${JSON.stringify(parsedJson)}</pre>`;
+                    parsedJsonData = JSON.parse(jsonString); // グローバル変数にデータを格納
+                    return `<pre id="output-json-text">${JSON.stringify(parsedJsonData)}</pre>`;
                 } catch (error) {
+                    parsedJsonData = null; // 失敗したらデータをクリア
                     highlightErrorPosition(error.message);
                     const japaneseMessage = getJapaneseErrorMessage(error.message);
                     throw new Error(`[JSON Error]\n${error.message}\n\n[日本語メッセージ]\n${japaneseMessage}`);
@@ -276,47 +284,40 @@
             const createHierarchicalView = (data, key = null) => {
                 const li = document.createElement('li');
                 
-                // キーと値のコンテナ
                 const keyContainer = document.createElement('div');
                 keyContainer.className = 'key-container';
                 li.appendChild(keyContainer);
                 
                 const isExpandable = typeof data === 'object' && data !== null;
 
-                // 子要素がある場合はトグルアイコンとクリックイベントを追加
                 if (isExpandable) {
                     keyContainer.classList.add('clickable');
 
                     const toggleIcon = document.createElement('span');
                     toggleIcon.className = 'toggle-icon';
-                    toggleIcon.textContent = li.classList.contains('expanded') ? '▼' : '▶';
+                    toggleIcon.textContent = '▶';
 
                     keyContainer.appendChild(toggleIcon);
                     
-                    // クリックで折りたたみ/展開
                     keyContainer.addEventListener('click', () => {
                         li.classList.toggle('expanded');
                         toggleIcon.textContent = li.classList.contains('expanded') ? '▼' : '▶';
                     });
                 } else {
-                    // 子要素がない場合はプレースホルダーとして空のspanを挿入してインデントを合わせる
                     const emptyIcon = document.createElement('span');
                     emptyIcon.className = 'toggle-icon';
                     keyContainer.appendChild(emptyIcon);
                 }
 
-                // キーの表示
-                const keySpan = document.createElement('span');
                 if (key !== null) {
-                    keySpan.innerHTML = `<span class="json-key">${key}</span>:`;
+                    const keySpan = document.createElement('span');
+                    keySpan.innerHTML = `<span class="json-key">"${key}"</span>:`;
                     keyContainer.appendChild(keySpan);
                 }
 
-                // 値の表示
                 if (isExpandable) {
-                    // オブジェクトまたは配列の場合
                     const children = document.createElement('ul');
-                    children.className = 'tree-view children';
+                    children.className = 'children';
                     
                     if (Array.isArray(data)) {
                         keyContainer.innerHTML += `<span class="value-type">Array[${data.length}]</span>`;
@@ -331,7 +332,6 @@
                     }
                     li.appendChild(children);
                 } else {
-                    // プリミティブな値の場合
                     let valueSpan = document.createElement('span');
                     let valueClass = '';
                     let valueText = '';
@@ -357,7 +357,7 @@
                 
                 return li;
             };
-            
+
             /**
              * クリップボードにテキストをコピーする関数
              * @param {string} text - コピーするテキスト
@@ -395,6 +395,8 @@
                 errorMessage.textContent = message;
                 errorMessage.classList.remove('hidden');
                 outputContainer.innerHTML = "";
+                parsedJsonData = null; // 失敗したらデータをクリア
+                currentMode = null; // エラー時はモードもクリア
             };
 
             // エラーメッセージを非表示にする関数
@@ -412,6 +414,7 @@
                 }
                 try {
                     outputContainer.innerHTML = formatJson(jsonText);
+                    currentMode = 'format';
                 } catch (error) {
                     displayError(error.message);
                 }
@@ -427,6 +430,7 @@
                 }
                 try {
                     outputContainer.innerHTML = minifyJson(jsonText);
+                    currentMode = 'minify';
                 } catch (error) {
                     displayError(error.message);
                 }
@@ -441,14 +445,15 @@
                     return;
                 }
                 try {
-                    const parsedJson = JSON.parse(jsonText);
+                    parsedJsonData = JSON.parse(jsonText); // グローバル変数にデータを格納
                     const rootUl = document.createElement('ul');
                     rootUl.className = 'tree-view';
-                    const rootLi = createHierarchicalView(parsedJson);
-                    rootLi.classList.add('expanded'); // ルートはデフォルトで展開しておく
+                    const rootLi = createHierarchicalView(parsedJsonData);
+                    rootLi.classList.add('expanded');
                     rootUl.appendChild(rootLi);
                     outputContainer.innerHTML = "";
                     outputContainer.appendChild(rootUl);
+                    currentMode = 'hierarchical';
                 } catch (error) {
                     displayError(error.message);
                 }
@@ -456,7 +461,19 @@
 
             // コピーボタンのクリックイベント
             copyButton.addEventListener('click', () => {
-                const textToCopy = inputJson.value;
+                if (parsedJsonData === null) {
+                    // 有効なJSONがない場合は何もしない
+                    return;
+                }
+
+                let textToCopy = "";
+                if (currentMode === 'minify') {
+                    textToCopy = JSON.stringify(parsedJsonData);
+                } else {
+                    // 整形、階層表示の場合は整形されたJSONをコピー
+                    textToCopy = JSON.stringify(parsedJsonData, null, 2);
+                }
+                
                 copyToClipboard(textToCopy);
             });
             
@@ -465,12 +482,15 @@
                 inputJson.value = "";
                 outputContainer.innerHTML = "";
                 hideError();
+                parsedJsonData = null;
+                currentMode = null;
             });
 
             // 初期表示のために、サンプルJSONを整形してハイライトしておく
             if (inputJson.value) {
                 try {
                     outputContainer.innerHTML = formatJson(inputJson.value);
+                    currentMode = 'format';
                 } catch (error) {
                     displayError(error.message);
                 }
