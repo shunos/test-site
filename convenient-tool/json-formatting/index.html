@@ -165,17 +165,25 @@
             /**
              * JSONエラーメッセージを日本語に変換する関数
              * @param {string} errorText - JSON.parseから返されたエラーメッセージ
+             * @param {string} rawInput - 整形前の入力文字列
              * @returns {string} - 日本語のユーザーフレンドリーなエラーメッセージ
              */
-            const getJapaneseErrorMessage = (errorText) => {
+            const getJapaneseErrorMessage = (errorText, rawInput) => {
+                // 最後の要素の後に余分なカンマがあるケースを特定
+                const cleanInput = rawInput.replace(/\s+/g, '');
+                if (cleanInput.endsWith(',}') || cleanInput.endsWith(',]')) {
+                    return "オブジェクトまたは配列の末尾に、余分なカンマがあります。";
+                }
+                
                 if (errorText.includes("Unexpected token '/'")) {
                     return "JSONではコメント（//や/**/）は許可されていません。削除してください。";
                 }
                 
-                if (errorText.includes("Expected double-quoted property name")) {
+                // キーがダブルクォーテーションで囲まれていないケース
+                if (errorText.includes("Expected double-quoted property name") || errorText.includes("Expected property name or '}'")) {
                     return "JSONのキーがダブルクォーテーションで囲まれていません。";
                 }
-                
+
                 if (errorText.includes("Unexpected token")) {
                     return "JSONの文法に誤りがあります。不正な文字やクォーテーションの位置を確認してください。";
                 }
@@ -253,7 +261,7 @@
                 } catch (error) {
                     parsedJsonData = null; // 失敗したらデータをクリア
                     highlightErrorPosition(error.message);
-                    const japaneseMessage = getJapaneseErrorMessage(error.message);
+                    const japaneseMessage = getJapaneseErrorMessage(error.message, jsonString);
                     throw new Error(`[JSON Error]\n${error.message}\n\n[日本語メッセージ]\n${japaneseMessage}`);
                 }
             };
@@ -270,7 +278,7 @@
                 } catch (error) {
                     parsedJsonData = null; // 失敗したらデータをクリア
                     highlightErrorPosition(error.message);
-                    const japaneseMessage = getJapaneseErrorMessage(error.message);
+                    const japaneseMessage = getJapaneseErrorMessage(error.message, jsonString);
                     throw new Error(`[JSON Error]\n${error.message}\n\n[日本語メッセージ]\n${japaneseMessage}`);
                 }
             };
@@ -455,7 +463,10 @@
                     outputContainer.appendChild(rootUl);
                     currentMode = 'hierarchical';
                 } catch (error) {
-                    displayError(error.message);
+                    // 整形、圧縮と同様に日本語もエラー表示する
+                    highlightErrorPosition(error.message);
+                    const japaneseMessage = getJapaneseErrorMessage(error.message, jsonText);
+                    displayError(`[JSON Error]\n${error.message}\n\n[日本語メッセージ]\n${japaneseMessage}`);
                 }
             });
 
