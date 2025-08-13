@@ -102,29 +102,63 @@
         .copied-message.show {
             opacity: 1;
         }
+
+        /* アイコンボタンのスタイル */
+        .icon-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 0.5rem;
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(209, 213, 219, 0.5);
+            border-radius: 9999px; /* 完全な円形 */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            color: #4b5563;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        .icon-button:hover {
+            background-color: rgba(255, 255, 255, 1);
+            color: #1f2937;
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
     <div class="container mx-auto p-8 bg-white rounded-xl shadow-lg w-full max-w-4xl">
         <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">JSON整形ツール</h1>
         <p class="text-center text-gray-600 mb-8">
-            整形したいJSONデータを入力してください。
+            入力されたJSONデータを様々な形式に変換し、視覚的に確認するためのシンプルなアプリケーションです。<br>整形したいJSONデータを入力してください。
         </p>
         
         <!-- 入力エリアと出力エリアのコンテナ -->
         <div class="flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-6 mb-6">
             <!-- 入力エリア -->
-            <div class="w-full lg:w-1/2">
+            <div class="w-full lg:w-1/2 relative">
                 <label for="input-json" class="block text-sm font-medium text-gray-700 mb-2">入力JSON</label>
                 <textarea id="input-json" class="w-full h-80 p-4 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" placeholder='{"user": {"id": "u-001", "name": "山田 太郎", "is_active": true, "last_login": "2023-01-15T12:00:00Z", "preferences": {"theme": "dark", "language": "ja"}, "roles": ["admin", "editor"], "permissions": [{"resource": "posts", "level": "read_write"}, {"resource": "users", "level": "read"}]}}'></textarea>
+                <!-- クリアボタンをアイコン化して配置 -->
+                <button id="clear-button" class="icon-button" aria-label="すべてクリア">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
             </div>
             
             <!-- 出力エリア -->
-            <div class="w-full lg:w-1/2">
+            <div class="w-full lg:w-1/2 relative">
                 <label for="output-container" class="block text-sm font-medium text-gray-700 mb-2">出力</label>
                 <div id="output-container" class="w-full h-80 p-4 bg-gray-50 border border-gray-300 rounded-lg output-container">
                     <!-- 整形されたテキストまたは階層表示がここに追加されます -->
                 </div>
+                <!-- コピーボタンをアイコン化して配置 -->
+                <button id="copy-button" class="icon-button" aria-label="出力内容をコピー">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                </button>
             </div>
         </div>
         
@@ -133,13 +167,52 @@
             <button id="format-button" class="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200">整形</button>
             <button id="minify-button" class="px-6 py-3 bg-green-600 text-white font-bold rounded-lg shadow-md hover:bg-green-700 transition-colors duration-200">圧縮</button>
             <button id="hierarchical-button" class="px-6 py-3 bg-purple-600 text-white font-bold rounded-lg shadow-md hover:bg-purple-700 transition-colors duration-200">階層表示</button>
-            <button id="copy-button" class="px-6 py-3 bg-gray-500 text-white font-bold rounded-lg shadow-md hover:bg-gray-600 transition-colors duration-200">コピー</button>
-            <button id="clear-button" class="px-6 py-3 bg-red-600 text-white font-bold rounded-lg shadow-md hover:bg-red-700 transition-colors duration-200">すべてクリア</button>
         </div>
 
         <!-- エラーメッセージ表示エリア -->
         <div id="error-message" class="mt-6 p-4 bg-red-100 text-red-700 rounded-lg hidden">
             <!-- エラーメッセージがここに追加されます -->
+        </div>
+
+        <!-- ツールの説明エリア -->
+        <div class="mt-12 p-8 bg-gray-50 rounded-xl">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">ツールの説明</h2>
+            <p class="text-gray-600 mb-6">
+                このJSON整形ツールは、入力されたJSONデータを様々な形式に変換し、視覚的に確認するためのシンプルなウェブアプリケーションです。開発者やデータ分析者にとって、複雑なJSONデータを簡単に読みやすくしたり、逆に通信効率を上げるために圧縮したりする際に役立ちます。
+            </p>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">機能詳細</h2>
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">1. 整形</h3>
+                    <p class="text-gray-600">
+                        JSONデータを人間が読みやすいように、インデント（字下げ）や改行を加えてきれいに整形します。さらに、構文に応じたカラーハイライトが適用されるため、キー、文字列、数値、真偽値、nullなどを一目で判別できます。文法エラーがある場合は、エラーメッセージと日本語での解説が表示され、問題の箇所が入力エリアでハイライトされます。
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">2. 圧縮</h3>
+                    <p class="text-gray-600">
+                        JSONデータからすべてのインデントと改行を削除し、データサイズを最小限に圧縮します。API通信などでデータを効率的に送受信したい場合に便利です。
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">3. 階層表示</h3>
+                    <p class="text-gray-600">
+                        JSONデータをツリー構造で表示します。オブジェクトや配列の階層を折りたたんだり展開したりできるため、ネストされた複雑なデータ構造を直感的に把握できます。
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">4. コピー</h3>
+                    <p class="text-gray-600">
+                        出力エリアに表示されている内容をクリップボードにコピーします。整形後のJSON、圧縮されたJSON、どちらの形式でもコピー可能です。
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">5. すべてクリア</h3>
+                    <p class="text-gray-600">
+                        入力エリアと出力エリアの内容、および表示されているエラーメッセージをすべてクリアし、初期状態に戻します。
+                    </p>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -463,7 +536,6 @@
                     outputContainer.appendChild(rootUl);
                     currentMode = 'hierarchical';
                 } catch (error) {
-                    // 整形、圧縮と同様に日本語もエラー表示する
                     highlightErrorPosition(error.message);
                     const japaneseMessage = getJapaneseErrorMessage(error.message, jsonText);
                     displayError(`[JSON Error]\n${error.message}\n\n[日本語メッセージ]\n${japaneseMessage}`);
