@@ -58,6 +58,7 @@
             justify-content: space-between;
             margin-top: 20px;
             gap: 15px;
+            position: relative;
         }
         .controls .toggle-group {
             display: flex;
@@ -109,6 +110,10 @@
             transform: translateX(22px);
         }
         
+        .controls .button-group {
+            display: flex;
+            gap: 10px;
+        }
         .controls button {
             background-color: #4CAF50; /* Green */
             color: white;
@@ -257,6 +262,75 @@
             color: #555;
             line-height: 1.4;
         }
+
+        /* テキストエリアのコンテナ */
+        .textarea-container {
+            position: relative;
+            margin-top: 20px;
+        }
+
+        /* コピーボタンのスタイル */
+        .copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #E0E0E0; /* シックなグレーに変更 */
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease; /* ホバーアニメーション用 */
+        }
+        .copy-button:hover {
+            transform: scale(1.1); /* ふわっと大きくなるアニメーション */
+        }
+        .copy-button svg {
+            width: 20px;
+            height: 20px;
+            fill: #424242; /* アイコンの色もシックに */
+            transition: transform 0.3s ease;
+        }
+
+        /* ツールチップのスタイル */
+        .tooltip {
+            position: absolute;
+            background-color: #424242; /* ダークグレーに変更 */
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            bottom: calc(100% + 10px); /* ボタンの上に配置 */
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease-in-out;
+            z-index: 999;
+        }
+
+        /* ツールチップの三角形 */
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%; /* ツールチップの下部に配置 */
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #424242 transparent transparent transparent;
+        }
+
+        .copy-button:hover .tooltip,
+        .tooltip.show {
+            opacity: 1;
+        }
+
         /* レスポンシブ対応 */
         @media (max-width: 600px) {
             .container {
@@ -268,6 +342,21 @@
             }
             .results {
                 grid-template-columns: 1fr;
+            }
+            .copy-button {
+                top: auto;
+                bottom: 10px;
+                right: 10px;
+            }
+            .copy-button:hover .tooltip,
+            .tooltip.show {
+                bottom: auto;
+                top: calc(100% + 10px);
+            }
+            .copy-button .tooltip::after {
+                top: auto;
+                bottom: 100%;
+                border-color: transparent transparent #424242 transparent;
             }
         }
     </style>
@@ -287,13 +376,22 @@
                     <span class="slider"></span>
                 </label>
             </div>
-            <div>
+            <div class="button-group">
                 <button id="count-button">カウント</button>
                 <button id="reset-button">リセット</button>
             </div>
         </div>
 
-        <textarea id="text-input" placeholder="ここにテキストを入力してください..."></textarea>
+        <div class="textarea-container">
+            <textarea id="text-input" placeholder="ここにテキストを入力してください..."></textarea>
+            <button id="copy-button" class="copy-button">
+                <!-- コピーアイコンのSVG -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                </svg>
+                <span id="copy-tooltip" class="tooltip">コピーする</span>
+            </button>
+        </div>
 
         <div class="results">
             <div class="result-box">
@@ -387,6 +485,8 @@
             const realtimeToggle = document.getElementById('realtime-toggle');
             const countButton = document.getElementById('count-button');
             const resetButton = document.getElementById('reset-button');
+            const copyButton = document.getElementById('copy-button');
+            const copyTooltip = document.getElementById('copy-tooltip');
             
             const resetModal = document.getElementById('reset-modal');
             const modalOkButton = document.getElementById('modal-ok-button');
@@ -475,6 +575,30 @@
             
             // カウントボタンのクリックイベント
             countButton.addEventListener('click', updateCounts);
+
+            // コピーボタンのクリックイベント
+            copyButton.addEventListener('click', () => {
+                // テキストエリアの内容をクリップボードにコピー
+                const textToCopy = textInput.value;
+                if (textToCopy) {
+                    const tempTextarea = document.createElement('textarea');
+                    tempTextarea.value = textToCopy;
+                    document.body.appendChild(tempTextarea);
+                    tempTextarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(tempTextarea);
+                    
+                    // ツールチップの表示メッセージを「コピーしました！」に変更
+                    copyTooltip.textContent = "コピーしました！";
+                    copyTooltip.classList.add('show');
+
+                    // 2秒後に元のメッセージに戻す
+                    setTimeout(() => {
+                        copyTooltip.classList.remove('show');
+                        copyTooltip.textContent = "コピーする";
+                    }, 2000);
+                }
+            });
 
             // リセットボタンのクリックイベント
             resetButton.addEventListener('click', () => {
