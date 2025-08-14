@@ -37,6 +37,48 @@
             margin-bottom: 20px;
             line-height: 1.6;
         }
+        /* Googleサービスへのリンクボタンのコンテナ */
+        .google-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        /* Googleサービスへのリンクボタンのスタイル */
+        .google-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 25px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            color: white; /* アイコンとテキストの色を白に統一 */
+        }
+        .google-button:hover {
+            transform: translateY(-2px); /* ボタンを上に少し動かす */
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15); /* 影を濃くする */
+        }
+        .google-button.docs {
+            background-color: #4285F4; /* Google Docsの青色 */
+        }
+        .google-button.docs:hover {
+            background-color: #3c78d8;
+        }
+        .google-button.sheets {
+            background-color: #0F9D58; /* Google Sheetsの緑色 */
+        }
+        .google-button.sheets:hover {
+            background-color: #0e8a4a;
+        }
+        .google-button svg {
+            fill: white;
+            width: 20px;
+            height: 20px;
+        }
         textarea {
             width: 100%;
             height: 300px;
@@ -358,6 +400,9 @@
                 bottom: 100%;
                 border-color: transparent transparent #424242 transparent;
             }
+            .google-links {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -365,8 +410,21 @@
     <div class="container">
         <h1>文字数カウントツール</h1>
         <p class="description">
-            リアルタイムで文字数を数えるツールです。SNSの投稿やレポートの執筆時に、文字数制限を気にせず文章を作成できます。<br>入力されたテキストはブラウザ内でのみ処理されるため、外部のサーバーに送信されることはありません。安心してご利用いただけます。
+            リアルタイムで文字数を数えるツールです。SNSの投稿やレポートの執筆時に、文字数制限を気にせず文章を作成できます。入力されたテキストはブラウザ内でのみ処理されるため、外部のサーバーに送信されることはありません。安心してご利用いただけます。
         </p>
+        
+        <!-- Googleサービスへのリンクボタンを追加 -->
+        <div class="google-links">
+            <a href="https://docs.google.com/spreadsheets/" target="_blank" rel="noopener noreferrer" class="google-button sheets">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16 11H8V9h8v2zm0 4H8v-2h8v2zm-4 4H8v-2h4v2zm8-18H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM4 20V4h16l-.01 16H4z"/></svg>
+                Google スプレッドシート
+            </a>
+            <a href="https://docs.google.com/document/" target="_blank" rel="noopener noreferrer" class="google-button docs">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm-1 8V3.5L18.5 9H13z"/></svg>
+                Google ドキュメント
+            </a>
+        </div>
+        <!-- /Googleサービスへのリンクボタン -->
 
         <div class="controls">
             <div class="toggle-group">
