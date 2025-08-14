@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>パスワード生成ツール</title>
+    <!-- Load Tailwind CSS from CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Inter font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom styles for preset buttons */
+        .preset-label {
+            @apply flex-grow text-center py-2 px-4 rounded-lg cursor-pointer transition-colors duration-200 select-none border-2 border-transparent;
+        }
+        .preset-label-active {
+            @apply bg-indigo-500 text-white shadow-md;
+        }
+        .preset-label-inactive {
+            @apply bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600;
+        }
+        /* Hide scrollbar for a cleaner look */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+        }
+        /* Slider thumb styles for range input */
+        input[type="range"]::-webkit-slider-thumb {
+            @apply appearance-none w-4 h-4 bg-indigo-600 rounded-full cursor-pointer;
+        }
+        input[type="range"]::-moz-range-thumb {
+            @apply appearance-none w-4 h-4 bg-indigo-600 rounded-full cursor-pointer;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8 max-w-lg w-full transition-all duration-300">
+        <h1 class="text-3xl md:text-4xl font-bold text-center mb-6">パスワード生成ツール</h1>
+
+        <!-- Main password display area -->
+        <div class="relative flex items-center justify-between bg-gray-200 dark:bg-gray-700 rounded-xl p-4 mb-4">
+            <span id="password-display" class="text-xl md:text-2xl font-mono truncate mr-4">パスワード生成</span>
+            <button id="copy-main-btn" class="flex-shrink-0 flex items-center justify-center p-2 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <!-- Copy icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+            </button>
+            <div id="copy-message-main" class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1 bg-green-500 text-white text-xs rounded-full opacity-0 transition-opacity duration-300">
+                コピーしました！
+            </div>
+        </div>
+
+        <!-- Strength indicator -->
+        <div class="mb-6">
+            <div id="strength-text" class="text-sm font-medium mb-1">パスワードの強度: <span id="strength-level" class="font-bold">弱</span></div>
+            <div id="strength-indicator" class="h-2 rounded-full w-0 bg-gray-300 dark:bg-gray-600 transition-all duration-300"></div>
+        </div>
+
+        <!-- Settings panel -->
+        <div class="space-y-4">
+            <!-- Length settings -->
+            <div>
+                <label for="length-range" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    文字数 (<span id="length-value" class="font-bold text-indigo-500">12</span>文字)
+                </label>
+                <input type="range" id="length-range" min="4" max="40" value="12" class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer range-lg mb-4">
+                
+                <div class="flex items-center space-x-2">
+                    <!-- Input field and validation icon -->
+                    <div class="relative flex-grow">
+                        <input type="number" id="length-input" min="4" max="40" value="12" class="w-full text-center py-2 px-3 bg-gray-200 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <!-- Checkmark icon for valid input -->
+                        <div id="validation-icon" class="absolute inset-y-0 right-0 pr-3 flex items-center transition-opacity duration-300 opacity-0 text-green-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586l-1.293-1.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                    </div>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">文字</span>
+                    <!-- Preset "checkbox-like" buttons with exclusive control -->
+                    <div class="flex space-x-2" id="preset-buttons">
+                        <label class="preset-label preset-label-inactive" data-length="8">
+                            <input type="radio" name="length-preset" value="8" class="hidden">8
+                        </label>
+                        <label class="preset-label preset-label-active" data-length="12">
+                            <input type="radio" name="length-preset" value="12" class="hidden" checked>12
+                        </label>
+                        <label class="preset-label preset-label-inactive" data-length="16">
+                            <input type="radio" name="length-preset" value="16" class="hidden">16
+                        </label>
+                        <label class="preset-label preset-label-inactive" data-length="32">
+                            <input type="radio" name="length-preset" value="32" class="hidden">32
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Character type selection -->
+            <div>
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="flex items-center text-gray-700 dark:text-gray-300 cursor-pointer">
+                        <input type="checkbox" id="uppercase" checked class="form-checkbox h-5 w-5 text-indigo-600 rounded-md transition duration-150 ease-in-out">
+                        <span class="ml-2">大文字</span>
+                    </label>
+                    <label class="flex items-center text-gray-700 dark:text-gray-300 cursor-pointer">
+                        <input type="checkbox" id="lowercase" checked class="form-checkbox h-5 w-5 text-indigo-600 rounded-md transition duration-150 ease-in-out">
+                        <span class="ml-2">小文字</span>
+                    </label>
+                    <label class="flex items-center text-gray-700 dark:text-gray-300 cursor-pointer">
+                        <input type="checkbox" id="numbers" checked class="form-checkbox h-5 w-5 text-indigo-600 rounded-md transition duration-150 ease-in-out">
+                        <span class="ml-2">数字</span>
+                    </label>
+                    <label class="flex items-center text-gray-700 dark:text-gray-300 cursor-pointer">
+                        <input type="checkbox" id="symbols" class="form-checkbox h-5 w-5 text-indigo-600 rounded-md transition duration-150 ease-in-out">
+                        <span class="ml-2">記号</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generate button -->
+        <button id="generate-btn" class="mt-6 w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 hover:bg-indigo-700">
+            生成
+        </button>
+
+        <!-- Other candidate passwords display area -->
+        <div class="mt-8 pt-4 border-t border-gray-300 dark:border-gray-700">
+            <h2 class="text-xl font-bold mb-4">他の候補</h2>
+            <!-- Grid for two columns on larger screens -->
+            <div id="additional-passwords" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-48 overflow-y-auto no-scrollbar">
+                <!-- Passwords will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const passwordDisplay = document.getElementById('password-display');
+        const copyMainBtn = document.getElementById('copy-main-btn');
+        const copyMessageMain = document.getElementById('copy-message-main');
+        const lengthRange = document.getElementById('length-range');
+        const lengthInput = document.getElementById('length-input');
+        const lengthValueSpan = document.getElementById('length-value');
+        const uppercaseCheckbox = document.getElementById('uppercase');
+        const lowercaseCheckbox = document.getElementById('lowercase');
+        const numbersCheckbox = document.getElementById('numbers');
+        const symbolsCheckbox = document.getElementById('symbols');
+        const generateBtn = document.getElementById('generate-btn');
+        const strengthIndicator = document.getElementById('strength-indicator');
+        const strengthLevel = document.getElementById('strength-level');
+        const presetLabels = document.querySelectorAll('.preset-label');
+        const additionalPasswordsContainer = document.getElementById('additional-passwords');
+        const validationIcon = document.getElementById('validation-icon');
+
+        // Define character sets
+        const charSets = {
+            uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+            lowercase: 'abcdefghijklmnopqrstuvwxyz',
+            numbers: '0123456789',
+            symbols: '!@#$%^&*()_+-=[]{}|;:",.<>?'
+        };
+
+        // Function to generate a password with a given length and character set
+        const createPassword = (length, characterSet) => {
+            let password = '';
+            for (let i = 0; i < length; i++) {
+                const randomIndex = Math.floor(Math.random() * characterSet.length);
+                password += characterSet[randomIndex];
+            }
+            return password;
+        };
+
+        // Function to generate passwords and update the UI
+        const generatePasswords = () => {
+            let characterSet = '';
+            const passwordLength = parseInt(lengthInput.value, 10); // Ensure passwordLength is an integer
+
+            // Build character set based on selected checkboxes
+            if (uppercaseCheckbox.checked) characterSet += charSets.uppercase;
+            if (lowercaseCheckbox.checked) characterSet += charSets.lowercase;
+            if (numbersCheckbox.checked) characterSet += charSets.numbers;
+            if (symbolsCheckbox.checked) characterSet += charSets.symbols;
+
+            // Stop if character set is empty
+            if (characterSet === '') {
+                passwordDisplay.textContent = '文字種を選択してください';
+                updateStrengthIndicator('');
+                additionalPasswordsContainer.innerHTML = '';
+                return;
+            }
+
+            // Generate main password
+            const mainPassword = createPassword(passwordLength, characterSet);
+            passwordDisplay.textContent = mainPassword;
+            updateStrengthIndicator(mainPassword);
+
+            // Generate 10 other candidate passwords
+            additionalPasswordsContainer.innerHTML = ''; // Clear existing candidates
+            for (let i = 0; i < 10; i++) {
+                const additionalPassword = createPassword(passwordLength, characterSet);
+                const passwordItem = document.createElement('div');
+                passwordItem.className = 'flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-700 rounded-lg';
+                passwordItem.innerHTML = `
+                    <span class="font-mono text-sm truncate mr-4">${additionalPassword}</span>
+                    <button class="copy-candidate-btn flex-shrink-0 flex items-center justify-center p-1 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white transition-colors duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                    </button>
+                `;
+                additionalPasswordsContainer.appendChild(passwordItem);
+            }
+
+            // Add event listeners to dynamically generated copy buttons
+            document.querySelectorAll('.copy-candidate-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const passwordToCopy = e.target.closest('div').querySelector('span').textContent;
+                    copyToClipboard(passwordToCopy, button);
+                });
+            });
+        };
+
+        // Function to evaluate password strength and update indicator/text
+        const updateStrengthIndicator = (password) => {
+            let strength = 0;
+            const length = password.length;
+            const hasUppercase = /[A-Z]/.test(password);
+            const hasLowercase = /[a-z]/.test(password);
+            const hasNumber = /[0-9]/.test(password);
+            const hasSymbol = /[^A-Za-z0-9]/.test(password);
+
+            if (length > 0) {
+                // Score based on length (max at 40 chars)
+                strength += Math.min(length / 40, 1) * 40;
+                
+                // Score based on character types (max at 4 types)
+                let charTypes = [hasUppercase, hasLowercase, hasNumber, hasSymbol].filter(Boolean).length;
+                strength += charTypes * 15;
+                
+                // Update strength level text
+                if (strength < 40) {
+                    strengthLevel.textContent = '弱';
+                    strengthIndicator.style.backgroundColor = 'rgb(239, 68, 68)'; // red-500
+                } else if (strength < 80) {
+                    strengthLevel.textContent = '中';
+                    strengthIndicator.style.backgroundColor = 'rgb(250, 204, 21)'; // yellow-400
+                } else {
+                    strengthLevel.textContent = '強';
+                    strengthIndicator.style.backgroundColor = 'rgb(34, 197, 94)'; // green-500
+                }
+            } else {
+                strengthLevel.textContent = 'なし';
+                strengthIndicator.style.backgroundColor = 'rgb(209, 213, 219)'; // gray-300
+            }
+
+            // Update indicator width
+            strengthIndicator.style.width = `${Math.min(strength, 100)}%`;
+        };
+
+        // Common function to copy text to clipboard
+        const copyToClipboard = (text, button) => {
+            if (text && text !== 'パスワード生成' && text !== '文字種を選択してください') {
+                try {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+
+                    // Show success message
+                    let messageElement;
+                    if (button === copyMainBtn) {
+                        messageElement = copyMessageMain;
+                    } else {
+                        // Create a new message for candidates
+                        messageElement = document.createElement('div');
+                        messageElement.className = 'absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1 bg-green-500 text-white text-xs rounded-full opacity-0 transition-opacity duration-300';
+                        messageElement.textContent = 'コピーしました！';
+                        button.parentElement.style.position = 'relative';
+                        button.parentElement.appendChild(messageElement);
+                    }
+                    
+                    messageElement.classList.remove('opacity-0');
+                    messageElement.classList.add('opacity-100');
+
+                    setTimeout(() => {
+                        messageElement.classList.remove('opacity-100');
+                        messageElement.classList.add('opacity-0');
+                        if (button !== copyMainBtn) {
+                            messageElement.remove();
+                        }
+                    }, 1500);
+
+                } catch (err) {
+                    console.error('コピーに失敗しました: ', err);
+                }
+            }
+        };
+
+        // Function to update preset button styles
+        const updatePresetStyles = (activeValue) => {
+            presetLabels.forEach(label => {
+                if (parseInt(label.dataset.length) === activeValue) {
+                    label.classList.add('preset-label-active');
+                    label.classList.remove('preset-label-inactive');
+                } else {
+                    label.classList.remove('preset-label-active');
+                    label.classList.add('preset-label-inactive');
+                }
+            });
+        };
+
+        const validateAndSynchronizeLength = (value) => {
+            const num = parseInt(value, 10);
+            const clampedValue = Math.min(Math.max(num, 4), 40);
+            
+            // Sync slider and value display
+            lengthRange.value = clampedValue;
+            lengthValueSpan.textContent = clampedValue;
+            
+            // Update preset button styles
+            updatePresetStyles(clampedValue);
+            
+            return clampedValue;
+        };
+
+        const updateLength = (value) => {
+            const num = parseInt(value, 10);
+            if (!isNaN(num) && num >= 4 && num <= 40) {
+                validationIcon.classList.remove('opacity-0');
+                validationIcon.classList.add('opacity-100');
+            } else {
+                validationIcon.classList.remove('opacity-100');
+                validationIcon.classList.add('opacity-0');
+            }
+            validateAndSynchronizeLength(value);
+        };
+
+        // Event listeners
+        generateBtn.addEventListener('click', generatePasswords);
+
+        copyMainBtn.addEventListener('click', () => {
+            copyToClipboard(passwordDisplay.textContent, copyMainBtn);
+        });
+
+        lengthRange.addEventListener('input', (e) => {
+            const value = e.target.value;
+            lengthInput.value = value;
+            updateLength(value);
+        });
+
+        lengthRange.addEventListener('change', () => {
+             generatePasswords();
+        });
+
+        lengthInput.addEventListener('input', (e) => {
+            const value = e.target.value;
+            updateLength(value);
+        });
+
+        lengthInput.addEventListener('blur', (e) => {
+            let value = parseInt(e.target.value, 10);
+            if (isNaN(value) || value < 4) {
+                value = 4;
+            } else if (value > 40) {
+                value = 40;
+            }
+            lengthInput.value = value;
+            updateLength(value);
+            generatePasswords();
+        });
+        
+        // Use event delegation for preset labels
+        document.getElementById('preset-buttons').addEventListener('click', (e) => {
+            const label = e.target.closest('.preset-label');
+            if (label) {
+                const value = label.dataset.length;
+                lengthInput.value = value;
+                updateLength(value);
+                generatePasswords();
+            }
+        });
+
+        // Initial generation on page load
+        window.addEventListener('load', () => {
+            updateLength(12);
+            generatePasswords();
+        });
+    </script>
+</body>
+</html>
