@@ -56,10 +56,10 @@
 ### 2.3. Googleサービスへのリンク機能
 
 * **ボタンの追加**: GoogleスプレッドシートとGoogleドキュメントへ遷移するためのボタンをUIに追加する。
-    * **遷移先**: 各ボタンは、それぞれのサービスのトップページに直接リンクさせる。
-        * **Googleスプレッドシート**: https://docs.google.com/spreadsheets/
-        * **Googleドキュメント**: https://docs.google.com/document/
-    * **UI/UX**: ボタンは視認性が高く、クリックしやすいデザインとする。
+* **遷移先**: 各ボタンは、それぞれのサービスのトップページに直接リンクさせる。
+    * **Googleスプレッドシート**: https://docs.google.com/spreadsheets/
+    * **Googleドキュメント**: https://docs.google.com/document/
+* **UI/UX**: ボタンは視認性が高く、クリックしやすいデザインとする。
 
 ---
 
