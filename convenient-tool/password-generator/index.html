@@ -20,13 +20,43 @@
             -ms-overflow-style: none; /* IE and Edge */
             scrollbar-width: none; /* Firefox */
         }
-        /* Slider thumb styles for range input */
+        /* Custom slider styles for range input */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #d1d5db; /* Tailwind: bg-gray-300 */
+            outline: none;
+            border-radius: 9999px; /* Tailwind: rounded-full */
+        }
         input[type="range"]::-webkit-slider-thumb {
-            @apply appearance-none w-4 h-4 bg-indigo-600 rounded-full cursor-pointer;
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #4f46e5; /* Tailwind: bg-indigo-600 */
+            cursor: pointer;
+            border-radius: 9999px; /* Tailwind: rounded-full */
+            margin-top: -4px; /* Adjust to center the thumb vertically */
+            border: 2px solid #ffffff; /* 白の枠線 */
+            box-shadow: 0 0 0 1px #8b8b8b; /* 外側に黒い線 */
         }
         input[type="range"]::-moz-range-thumb {
-            @apply appearance-none w-4 h-4 bg-indigo-600 rounded-full cursor-pointer;
+            width: 16px;
+            height: 16px;
+            background: #4f46e5; /* Tailwind: bg-indigo-600 */
+            cursor: pointer;
+            border-radius: 9999px;
+            margin-top: -4px; /* Adjust to center the thumb vertically */
+            border: 2px solid #ffffff; /* 白の枠線 */
+            box-shadow: 0 0 0 1px #000000; /* 外側に黒い線 */
         }
+        /* Dynamically update the background to show progress */
+        input[type="range"] {
+            --range-progress: 0%;
+            background: linear-gradient(to right, #4f46e5 var(--range-progress), #d1d5db var(--range-progress));
+        }
+
         #strength-bar {
             transition: width 0.3s ease, background-color 0.3s ease;
         }
@@ -69,7 +99,7 @@
                     文字数 (4〜40文字) (<span id="length-value" class="font-bold text-indigo-500">12</span>文字)
                 </label>
                 <div class="flex items-center space-x-2 mb-4">
-                    <input type="range" id="length-slider" min="4" max="40" value="12" class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer range-lg">
+                    <input type="range" id="length-slider" min="4" max="40" value="12" class="w-full h-2 rounded-lg appearance-none cursor-pointer range-lg">
                     <input type="number" id="length-input" min="4" max="40" value="12" class="w-16 text-center py-1 px-2 bg-gray-200 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
                 
@@ -140,8 +170,9 @@
                     コピーしました！
                 </div>
             </div>
-            <!-- ここから下の要素のパディングをpt-6に変更しました。 -->
-            <div id="result" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-48 overflow-y-auto no-scrollbar pt-6">
+            <!-- 他の候補の周りに線を追加しました -->
+            <!-- max-h-48とoverflow-y-autoを削除し、10個の候補が常に表示されるように変更 -->
+            <div id="result" class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3.5 border border-gray-300 dark:border-gray-700 rounded-lg p-4">
                 <!-- Passwords will be dynamically added here -->
             </div>
         </div>
@@ -279,7 +310,7 @@
 
         function generatePasswords() {
             let value = parseInt(lengthInput.value, 10);
-            const clampedValue = Math.min(Math.max(isNaN(value) ? 12 : value, 4), 40);
+            const clampedValue = Math.min(Math.max(isNaN(value) ? 4 : value, 4), 40);
             lengthInput.value = clampedValue;
             updateLengthUI(clampedValue);
             passwordLength = clampedValue;
@@ -348,7 +379,6 @@
                 } else {
                     // 他の候補のコピーボタンの場合
                     messageElement = document.createElement('div');
-                    // 修正: ここにある mb-1 を、より小さい値(例: mb-0.5)に変更することで、候補とメッセージの間のスペースを狭くできます。
                     messageElement.className = 'absolute bottom-full right-0 mb-1 px-2 py-0.5 bg-green-500 text-white text-xs rounded-full opacity-0 transition-opacity duration-300';
                     messageElement.textContent = 'コピーしました！';
                     clickedElement.parentElement.appendChild(messageElement);
@@ -388,6 +418,11 @@
             lengthSlider.value = num;
             lengthValueSpan.textContent = num;
 
+            // Update custom property for slider progress
+            const max = parseInt(lengthSlider.max, 10);
+            const percentage = ((num - lengthSlider.min) / (max - lengthSlider.min)) * 100;
+            lengthSlider.style.setProperty('--range-progress', `${percentage}%`);
+
             const radio = document.getElementById(`preset-${num}`);
             if (radio) {
                 radio.checked = true;
@@ -399,7 +434,14 @@
         // --- Event Listeners ---
 
         lengthInput.addEventListener('input', (e) => {
-            lengthValueSpan.textContent = e.target.value;
+            const value = e.target.value;
+            // 無効な入力の場合はスライダーをリセット
+            if (isNaN(parseInt(value, 10))) {
+                updateLengthUI(lengthSlider.min);
+            } else {
+                lengthSlider.value = value;
+                updateLengthUI(value);
+            }
         });
 
         lengthInput.addEventListener('blur', generatePasswords);
