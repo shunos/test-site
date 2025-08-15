@@ -12,16 +12,6 @@
         body {
             font-family: 'Inter', sans-serif;
         }
-        /* Custom styles for preset buttons */
-        .preset-label {
-            @apply flex-grow text-center py-2 px-4 rounded-lg cursor-pointer transition-colors duration-200 select-none border-2 border-transparent;
-        }
-        .preset-label-active {
-            @apply bg-indigo-500 text-white shadow-md;
-        }
-        .preset-label-inactive {
-            @apply bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600;
-        }
         /* Hide scrollbar for a cleaner look */
         .no-scrollbar::-webkit-scrollbar {
             display: none;
@@ -82,17 +72,21 @@
                 </div>
                 
                 <div class="flex space-x-2" id="preset-buttons">
-                    <label class="preset-label preset-label-inactive" data-length="8">
-                        <input type="radio" name="length-preset" value="8" class="hidden">8
+                    <label class="cursor-pointer flex-1 text-center py-2 px-4 rounded-lg border border-gray-300 dark:border-gray-600 peer-checked:bg-indigo-500 peer-checked:text-white peer-checked:border-indigo-500 transition-colors duration-200 hover:bg-gray-300 dark:hover:bg-gray-600" for="preset-8">
+                        <input type="radio" name="length-preset" id="preset-8" value="8" class="hidden peer">
+                        8
                     </label>
-                    <label class="preset-label preset-label-active" data-length="12">
-                        <input type="radio" name="length-preset" value="12" class="hidden" checked>12
+                    <label class="cursor-pointer flex-1 text-center py-2 px-4 rounded-lg border border-gray-300 dark:border-gray-600 peer-checked:bg-indigo-500 peer-checked:text-white peer-checked:border-indigo-500 transition-colors duration-200 hover:bg-gray-300 dark:hover:bg-gray-600" for="preset-12">
+                        <input type="radio" name="length-preset" id="preset-12" value="12" class="hidden peer" checked>
+                        12
                     </label>
-                    <label class="preset-label preset-label-inactive" data-length="16">
-                        <input type="radio" name="length-preset" value="16" class="hidden">16
+                    <label class="cursor-pointer flex-1 text-center py-2 px-4 rounded-lg border border-gray-300 dark:border-gray-600 peer-checked:bg-indigo-500 peer-checked:text-white peer-checked:border-indigo-500 transition-colors duration-200 hover:bg-gray-300 dark:hover:bg-gray-600" for="preset-16">
+                        <input type="radio" name="length-preset" id="preset-16" value="16" class="hidden peer">
+                        16
                     </label>
-                    <label class="preset-label preset-label-inactive" data-length="32">
-                        <input type="radio" name="length-preset" value="32" class="hidden">32
+                    <label class="cursor-pointer flex-1 text-center py-2 px-4 rounded-lg border border-gray-300 dark:border-gray-600 peer-checked:bg-indigo-500 peer-checked:text-white peer-checked:border-indigo-500 transition-colors duration-200 hover:bg-gray-300 dark:hover:bg-gray-600" for="preset-32">
+                        <input type="radio" name="length-preset" id="preset-32" value="32" class="hidden peer">
+                        32
                     </label>
                 </div>
             </div>
@@ -338,15 +332,11 @@
             lengthSlider.value = num;
             lengthInput.value = num;
             lengthValueSpan.textContent = num;
-            
-            const activeLabel = document.querySelector(`label[data-length="${num}"]`);
-            document.querySelectorAll('.preset-label').forEach(label => {
-                label.classList.remove('preset-label-active');
-                label.classList.add('preset-label-inactive');
-            });
-            if (activeLabel) {
-                activeLabel.classList.add('preset-label-active');
-                activeLabel.classList.remove('preset-label-inactive');
+
+            // Update radio button state
+            const radio = document.getElementById(`preset-${num}`);
+            if (radio) {
+                radio.checked = true;
             }
         }
         
@@ -366,10 +356,9 @@
 
         lengthInput.addEventListener('blur', generatePasswords);
         
-        presetButtons.addEventListener('click', (e) => {
-            const label = e.target.closest('.preset-label');
-            if (label) {
-                const value = label.dataset.length;
+        presetButtons.addEventListener('change', (e) => {
+            if (e.target.name === 'length-preset') {
+                const value = e.target.value;
                 updateLengthUI(value);
                 generatePasswords();
             }
