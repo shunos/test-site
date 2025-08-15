@@ -262,7 +262,16 @@
         }
 
         function generatePasswords() {
-            passwordLength = parseInt(lengthInput.value, 10);
+            let value = parseInt(lengthInput.value, 10);
+
+            // Clamp the value to be between 4 and 40
+            const clampedValue = Math.min(Math.max(isNaN(value) ? 12 : value, 4), 40);
+
+            // Update the input and slider values with the clamped value
+            lengthInput.value = clampedValue;
+            updateLengthUI(clampedValue);
+
+            passwordLength = clampedValue;
             
             // Generate main password
             const mainPassword = generatePassword(passwordLength);
@@ -327,43 +336,60 @@
             }
         }
 
+        // Helper function to update all length-related UI elements
         function updateLengthUI(value) {
             const num = parseInt(value, 10);
             lengthSlider.value = num;
-            lengthInput.value = num;
             lengthValueSpan.textContent = num;
 
             // Update radio button state
             const radio = document.getElementById(`preset-${num}`);
             if (radio) {
                 radio.checked = true;
+            } else {
+                // If the value doesn't match a preset, uncheck all presets
+                document.querySelectorAll('input[name="length-preset"]').forEach(r => r.checked = false);
             }
         }
-        
-        // Event listeners
+
+        // --- Event Listeners ---
+
+        // Input event on the number field: updates the value span in real-time
+        lengthInput.addEventListener('input', (e) => {
+            lengthValueSpan.textContent = e.target.value;
+        });
+
+        // Blur event on the number field: validates and clamps the value, then updates the UI
+        lengthInput.addEventListener('blur', generatePasswords);
+
+        // Keydown event on the number field: trigger generation on Enter key
+        lengthInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent default form submission behavior
+                generatePasswords();
+            }
+        });
+
+        // Change event on the slider: updates the input and generates passwords
         lengthSlider.addEventListener('input', (e) => {
             const value = e.target.value;
+            lengthInput.value = value;
             updateLengthUI(value);
         });
 
         lengthSlider.addEventListener('change', generatePasswords);
 
-        lengthInput.addEventListener('input', (e) => {
-            let value = e.target.value;
-            value = Math.min(Math.max(value, 4), 40);
-            updateLengthUI(value);
-        });
-
-        lengthInput.addEventListener('blur', generatePasswords);
-        
+        // Click event on preset buttons
         presetButtons.addEventListener('change', (e) => {
             if (e.target.name === 'length-preset') {
                 const value = e.target.value;
+                lengthInput.value = value;
                 updateLengthUI(value);
                 generatePasswords();
             }
         });
 
+        // "生成" button click event
         generateBtn.addEventListener('click', generatePasswords);
         
         copyMainBtn.addEventListener('click', () => {
