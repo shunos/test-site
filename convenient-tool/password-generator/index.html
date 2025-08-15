@@ -34,7 +34,9 @@
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex items-center justify-center p-4">
     <div class="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8 max-w-lg w-full transition-all duration-300">
-        <h1 class="text-3xl md:text-4xl font-bold text-center mb-6">パスワード生成ツール</h1>
+        <h1 class="text-3xl md:text-4xl font-bold text-center mb-2">パスワード生成ツール</h1>
+        <!-- 新規追加: ツールの簡単な説明 -->
+        <p class="text-center text-gray-600 dark:text-gray-400 mb-6">強力で安全なパスワードを簡単に作成できます。</p>
 
         <!-- Main password display area -->
         <div class="relative flex items-center justify-between bg-gray-200 dark:bg-gray-700 rounded-xl p-4 mb-4">
@@ -64,7 +66,8 @@
             <!-- Length settings -->
             <div>
                 <label for="length-range" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    文字数 (<span id="length-value" class="font-bold text-indigo-500">12</span>文字)
+                    <!-- 変更点: 文字数のラベルに範囲説明を追加 -->
+                    文字数 (4〜40文字) (<span id="length-value" class="font-bold text-indigo-500">12</span>文字)
                 </label>
                 <div class="flex items-center space-x-2 mb-4">
                     <input type="range" id="length-slider" min="4" max="40" value="12" class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer range-lg">
@@ -137,6 +140,18 @@
             <div id="result" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-48 overflow-y-auto no-scrollbar">
                 <!-- Passwords will be dynamically added here -->
             </div>
+        </div>
+        
+        <!-- 新規追加: 詳細説明セクション -->
+        <div class="mt-8 pt-4 border-t border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm">
+            <h2 class="text-lg font-semibold mb-2">ツールの説明</h2>
+            <p class="mb-2">このツールは、以下の設定に基づいてランダムなパスワードを生成します。</p>
+            <ul class="list-disc list-inside space-y-1">
+                <li><strong class="font-bold">文字数:</strong> スライダーまたは入力欄で4文字から40文字までの長さを設定できます。</li>
+                <li><strong class="font-bold">文字種:</strong> 大文字、小文字、数字、記号を自由に組み合わせることができます。</li>
+                <li><strong class="font-bold">パスワード強度:</strong> パスワードの長さと文字種を考慮して、リアルタイムで強度を評価します。</li>
+                <li><strong class="font-bold">複数の候補:</strong> 複数のパスワード候補を生成し、お好みのものを選択できます。</li>
+            </ul>
         </div>
     </div>
 
