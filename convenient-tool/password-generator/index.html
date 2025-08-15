@@ -35,7 +35,7 @@
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex items-center justify-center p-4">
     <div class="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8 max-w-lg w-full transition-all duration-300">
         <h1 class="text-3xl md:text-4xl font-bold text-center mb-2">パスワード生成ツール</h1>
-        <!-- 新規追加: ツールの簡単な説明 -->
+        <!-- ツールの簡単な説明 -->
         <p class="text-center text-gray-600 dark:text-gray-400 mb-6">強力で安全なパスワードを簡単に作成できます。</p>
 
         <!-- Main password display area -->
@@ -66,7 +66,6 @@
             <!-- Length settings -->
             <div>
                 <label for="length-range" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <!-- 変更点: 文字数のラベルに範囲説明を追加 -->
                     文字数 (4〜40文字) (<span id="length-value" class="font-bold text-indigo-500">12</span>文字)
                 </label>
                 <div class="flex items-center space-x-2 mb-4">
@@ -126,7 +125,7 @@
 
         <!-- Other candidate passwords display area -->
         <div class="mt-8 pt-4 border-t border-gray-300 dark:border-gray-700">
-            <div class="flex items-center justify-between mb-4">
+            <div class="relative flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold">他の候補</h2>
                 <button id="copy-all" class="flex items-center space-x-1 text-sm text-green-500 hover:text-green-600 transition-colors duration-200">
                     <!-- Copy icon -->
@@ -136,14 +135,19 @@
                     </svg>
                     <span>すべてコピー</span>
                 </button>
+                <!-- 「すべてコピー」用のメッセージ要素 -->
+                <div id="copy-message-all" class="absolute bottom-full right-0 mb-2 px-3 py-1 bg-green-500 text-white text-xs rounded-full opacity-0 transition-opacity duration-300">
+                    コピーしました！
+                </div>
             </div>
-            <div id="result" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-48 overflow-y-auto no-scrollbar">
+            <!-- ここから下の要素のパディングをpt-6に変更しました。 -->
+            <div id="result" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-48 overflow-y-auto no-scrollbar pt-6">
                 <!-- Passwords will be dynamically added here -->
             </div>
         </div>
         
-        <!-- 新規追加: 詳細説明セクション -->
-        <div class="mt-8 pt-4 border-t border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm">
+        <!-- 詳細説明セクションに薄いグレーの背景とパディングを追加しました -->
+        <div class="mt-8 p-4 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm">
             <h2 class="text-lg font-semibold mb-2">ツールの説明</h2>
             <p class="mb-2">このツールは、以下の設定に基づいてランダムなパスワードを生成します。</p>
             <ul class="list-disc list-inside space-y-1">
@@ -164,13 +168,14 @@
         const lengthSlider = document.getElementById('length-slider');
         const lengthInput = document.getElementById('length-input');
         const strengthBar = document.getElementById('strength-bar');
-        const strengthText = document.getElementById('strength-text');
+        const strengthText = document = document.getElementById('strength-text');
         const presetButtons = document.getElementById('preset-buttons');
         const generateBtn = document.getElementById('generate');
         const copyAllBtn = document.getElementById('copy-all');
         const passwordDisplay = document.getElementById('password-display');
         const copyMainBtn = document.getElementById('copy-main-btn');
         const copyMessageMain = document.getElementById('copy-message-main');
+        const copyMessageAll = document.getElementById('copy-message-all');
         const lengthValueSpan = document.getElementById('length-value');
         
         let passwordLength = 12;
@@ -186,7 +191,7 @@
         const shuffleArray = (array) => {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
+                [array[i], array[j]] = [array[i], array[j]];
             }
             return array;
         };
@@ -224,15 +229,12 @@
             return shuffleArray(passwordChars).join('');
         }
 
-        // --- パスワード強度を計算する新しいロジック ---
         function calculateStrength(pass) {
             let score = 0;
             if (pass.length === 0) return 0;
             
-            // 長さによるスコア (最大5ポイント)
             score += Math.min(Math.floor(pass.length / 8), 5);
 
-            // 文字の種類によるスコア (最大5ポイント)
             const hasUpper = /[A-Z]/.test(pass);
             const hasLower = /[a-z]/.test(pass);
             const hasNumbers = /[0-9]/.test(pass);
@@ -243,7 +245,6 @@
             if (hasNumbers) score++;
             if (hasSymbols) score++;
 
-            // 4種類すべてを含む場合のボーナススコア (1ポイント)
             if (hasUpper && hasLower && hasNumbers && hasSymbols) {
                 score++;
             }
@@ -278,17 +279,11 @@
 
         function generatePasswords() {
             let value = parseInt(lengthInput.value, 10);
-
-            // Clamp the value to be between 4 and 40
             const clampedValue = Math.min(Math.max(isNaN(value) ? 12 : value, 4), 40);
-
-            // Update the input and slider values with the clamped value
             lengthInput.value = clampedValue;
             updateLengthUI(clampedValue);
-
             passwordLength = clampedValue;
             
-            // Generate main password
             const mainPassword = generatePassword(passwordLength);
             
             if (mainPassword === '') {
@@ -301,15 +296,17 @@
             passwordDisplay.textContent = mainPassword;
             updateStrengthIndicator(mainPassword);
 
-            // Generate other candidate passwords
             resultDiv.innerHTML = "";
             for (let i = 0; i < 10; i++) {
                 const pass = generatePassword(passwordLength);
+                
                 const container = document.createElement('div');
-                container.className = "flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-700 rounded-lg";
+                container.className = "relative flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-700 rounded-lg";
+
                 const span = document.createElement('span');
                 span.className = "flex-1 font-mono text-sm truncate mr-4";
                 span.textContent = pass;
+
                 const copyBtn = document.createElement('button');
                 copyBtn.className = "copy-candidate-btn flex-shrink-0 flex items-center justify-center p-1 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white transition-colors duration-200";
                 copyBtn.innerHTML = `
@@ -318,8 +315,8 @@
                         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                     </svg>
                 `;
-                copyBtn.addEventListener('click', () => {
-                    copyToClipboard(pass);
+                copyBtn.addEventListener('click', (event) => {
+                    copyToClipboard(pass, event.currentTarget);
                 });
                 container.appendChild(span);
                 container.appendChild(copyBtn);
@@ -327,65 +324,93 @@
             }
         }
 
-        function copyToClipboard(text, isMain = false) {
-            if (text && text !== 'パスワード生成' && text !== '文字種を選択してください') {
-                try {
-                    const textarea = document.createElement('textarea');
-                    textarea.value = text;
-                    document.body.appendChild(textarea);
-                    textarea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textarea);
+        function copyToClipboard(text, clickedElement) {
+            if (!text || text === 'パスワード生成' || text === '文字種を選択してください') {
+                return;
+            }
 
-                    if (isMain) {
-                        copyMessageMain.classList.remove('opacity-0');
-                        copyMessageMain.classList.add('opacity-100');
-                        setTimeout(() => {
-                            copyMessageMain.classList.remove('opacity-100');
-                            copyMessageMain.classList.add('opacity-0');
-                        }, 1500);
-                    }
-                } catch (err) {
-                    console.error('コピーに失敗しました: ', err);
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                let messageElement;
+
+                // メインパスワードのコピーボタンの場合
+                if (clickedElement.id === 'copy-main-btn') {
+                    messageElement = copyMessageMain;
+                // 「すべてコピー」ボタンの場合
+                } else if (clickedElement.id === 'copy-all') {
+                    messageElement = copyMessageAll;
+                } else {
+                    // 他の候補のコピーボタンの場合
+                    messageElement = document.createElement('div');
+                    // 修正: ここにある mb-1 を、より小さい値(例: mb-0.5)に変更することで、候補とメッセージの間のスペースを狭くできます。
+                    messageElement.className = 'absolute bottom-full right-0 mb-1 px-2 py-0.5 bg-green-500 text-white text-xs rounded-full opacity-0 transition-opacity duration-300';
+                    messageElement.textContent = 'コピーしました！';
+                    clickedElement.parentElement.appendChild(messageElement);
+                    
+                    // DOM追加後、わずかな遅延を設けてアニメーションを開始
+                    setTimeout(() => {
+                        messageElement.classList.remove('opacity-0');
+                        messageElement.classList.add('opacity-100');
+                    }, 10);
                 }
+
+                if (messageElement) {
+                    // メインと「すべてコピー」ボタンのメッセージは、遅延なしでアニメーションを開始
+                    if (clickedElement.id === 'copy-main-btn' || clickedElement.id === 'copy-all') {
+                        messageElement.classList.remove('opacity-0');
+                        messageElement.classList.add('opacity-100');
+                    }
+
+                    setTimeout(() => {
+                        messageElement.classList.remove('opacity-100');
+                        messageElement.classList.add('opacity-0');
+                        // 候補ボタンのメッセージは、トランジション後に要素を削除
+                        if (clickedElement.id !== 'copy-main-btn' && clickedElement.id !== 'copy-all') {
+                            setTimeout(() => {
+                                messageElement.remove();
+                            }, 300);
+                        }
+                    }, 1500);
+                }
+            } catch (err) {
+                console.error('コピーに失敗しました: ', err);
             }
         }
 
-        // Helper function to update all length-related UI elements
         function updateLengthUI(value) {
             const num = parseInt(value, 10);
             lengthSlider.value = num;
             lengthValueSpan.textContent = num;
 
-            // Update radio button state
             const radio = document.getElementById(`preset-${num}`);
             if (radio) {
                 radio.checked = true;
             } else {
-                // If the value doesn't match a preset, uncheck all presets
                 document.querySelectorAll('input[name="length-preset"]').forEach(r => r.checked = false);
             }
         }
 
         // --- Event Listeners ---
 
-        // Input event on the number field: updates the value span in real-time
         lengthInput.addEventListener('input', (e) => {
             lengthValueSpan.textContent = e.target.value;
         });
 
-        // Blur event on the number field: validates and clamps the value, then updates the UI
         lengthInput.addEventListener('blur', generatePasswords);
 
-        // Keydown event on the number field: trigger generation on Enter key
         lengthInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                e.preventDefault(); // Prevent default form submission behavior
+                e.preventDefault();
                 generatePasswords();
             }
         });
 
-        // Change event on the slider: updates the input and generates passwords
         lengthSlider.addEventListener('input', (e) => {
             const value = e.target.value;
             lengthInput.value = value;
@@ -394,7 +419,6 @@
 
         lengthSlider.addEventListener('change', generatePasswords);
 
-        // Click event on preset buttons
         presetButtons.addEventListener('change', (e) => {
             if (e.target.name === 'length-preset') {
                 const value = e.target.value;
@@ -404,25 +428,23 @@
             }
         });
 
-        // "生成" button click event
         generateBtn.addEventListener('click', generatePasswords);
         
-        copyMainBtn.addEventListener('click', () => {
-            copyToClipboard(passwordDisplay.textContent, true);
+        copyMainBtn.addEventListener('click', (event) => {
+            copyToClipboard(passwordDisplay.textContent, event.currentTarget);
         });
         
-        copyAllBtn.addEventListener('click', () => {
+        copyAllBtn.addEventListener('click', (event) => {
             const allPasswords = Array.from(resultDiv.querySelectorAll('span'))
                 .map(span => span.textContent)
                 .join('\n');
-            copyToClipboard(allPasswords);
+            copyToClipboard(allPasswords, event.currentTarget);
         });
         
         document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
             checkbox.addEventListener('change', generatePasswords);
         });
 
-        // Initial generation
         window.onload = function() {
             updateLengthUI(12);
             generatePasswords();
