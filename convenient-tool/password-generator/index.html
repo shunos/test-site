@@ -37,6 +37,9 @@
         input[type="range"]::-moz-range-thumb {
             @apply appearance-none w-4 h-4 bg-indigo-600 rounded-full cursor-pointer;
         }
+        #strength-bar {
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex items-center justify-center p-4">
@@ -60,8 +63,10 @@
 
         <!-- Strength indicator -->
         <div class="mb-6">
-            <div id="strength-text" class="text-sm font-medium mb-1">パスワードの強度: <span id="strength-level" class="font-bold">弱</span></div>
-            <div id="strength-indicator" class="h-2 rounded-full w-0 bg-gray-300 dark:bg-gray-600 transition-all duration-300"></div>
+            <div class="text-sm font-medium mb-1">パスワードの強度: <span id="strength-text" class="font-bold">弱</span></div>
+            <div class="w-full bg-gray-300 dark:bg-gray-600 h-2 rounded-full">
+                <div id="strength-bar" class="h-2 rounded-full w-0"></div>
+            </div>
         </div>
 
         <!-- Settings panel -->
@@ -71,35 +76,24 @@
                 <label for="length-range" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     文字数 (<span id="length-value" class="font-bold text-indigo-500">12</span>文字)
                 </label>
-                <input type="range" id="length-range" min="4" max="40" value="12" class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer range-lg mb-4">
+                <div class="flex items-center space-x-2 mb-4">
+                    <input type="range" id="length-slider" min="4" max="40" value="12" class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer range-lg">
+                    <input type="number" id="length-input" min="4" max="40" value="12" class="w-16 text-center py-1 px-2 bg-gray-200 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
                 
-                <div class="flex items-center space-x-2">
-                    <!-- Input field and validation icon -->
-                    <div class="relative flex-grow">
-                        <input type="number" id="length-input" min="4" max="40" value="12" class="w-full text-center py-2 px-3 bg-gray-200 dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <!-- Checkmark icon for valid input -->
-                        <div id="validation-icon" class="absolute inset-y-0 right-0 pr-3 flex items-center transition-opacity duration-300 opacity-0 text-green-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586l-1.293-1.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                    </div>
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">文字</span>
-                    <!-- Preset "checkbox-like" buttons with exclusive control -->
-                    <div class="flex space-x-2" id="preset-buttons">
-                        <label class="preset-label preset-label-inactive" data-length="8">
-                            <input type="radio" name="length-preset" value="8" class="hidden">8
-                        </label>
-                        <label class="preset-label preset-label-active" data-length="12">
-                            <input type="radio" name="length-preset" value="12" class="hidden" checked>12
-                        </label>
-                        <label class="preset-label preset-label-inactive" data-length="16">
-                            <input type="radio" name="length-preset" value="16" class="hidden">16
-                        </label>
-                        <label class="preset-label preset-label-inactive" data-length="32">
-                            <input type="radio" name="length-preset" value="32" class="hidden">32
-                        </label>
-                    </div>
+                <div class="flex space-x-2" id="preset-buttons">
+                    <label class="preset-label preset-label-inactive" data-length="8">
+                        <input type="radio" name="length-preset" value="8" class="hidden">8
+                    </label>
+                    <label class="preset-label preset-label-active" data-length="12">
+                        <input type="radio" name="length-preset" value="12" class="hidden" checked>12
+                    </label>
+                    <label class="preset-label preset-label-inactive" data-length="16">
+                        <input type="radio" name="length-preset" value="16" class="hidden">16
+                    </label>
+                    <label class="preset-label preset-label-inactive" data-length="32">
+                        <input type="radio" name="length-preset" value="32" class="hidden">32
+                    </label>
                 </div>
             </div>
 
@@ -119,48 +113,59 @@
                         <span class="ml-2">数字</span>
                     </label>
                     <label class="flex items-center text-gray-700 dark:text-gray-300 cursor-pointer">
-                        <input type="checkbox" id="symbols" class="form-checkbox h-5 w-5 text-indigo-600 rounded-md transition duration-150 ease-in-out">
+                        <input type="checkbox" id="symbols" checked class="form-checkbox h-5 w-5 text-indigo-600 rounded-md transition duration-150 ease-in-out">
                         <span class="ml-2">記号</span>
                     </label>
                 </div>
             </div>
         </div>
 
-        <!-- Generate button -->
-        <button id="generate-btn" class="mt-6 w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 hover:bg-indigo-700">
-            生成
-        </button>
+        <!-- Buttons -->
+        <div class="mt-6 flex">
+            <button id="generate" class="flex-1 py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 hover:bg-indigo-700 w-full">
+                生成
+            </button>
+        </div>
 
         <!-- Other candidate passwords display area -->
         <div class="mt-8 pt-4 border-t border-gray-300 dark:border-gray-700">
-            <h2 class="text-xl font-bold mb-4">他の候補</h2>
-            <!-- Grid for two columns on larger screens -->
-            <div id="additional-passwords" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-48 overflow-y-auto no-scrollbar">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold">他の候補</h2>
+                <button id="copy-all" class="flex items-center space-x-1 text-sm text-green-500 hover:text-green-600 transition-colors duration-200">
+                    <!-- Copy icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <span>すべてコピー</span>
+                </button>
+            </div>
+            <div id="result" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-48 overflow-y-auto no-scrollbar">
                 <!-- Passwords will be dynamically added here -->
             </div>
         </div>
     </div>
 
     <script>
-        // Get DOM elements
+        const resultDiv = document.getElementById('result');
+        const uppercaseEl = document.getElementById('uppercase');
+        const lowercaseEl = document.getElementById('lowercase');
+        const numbersEl = document.getElementById('numbers');
+        const symbolsEl = document.getElementById('symbols');
+        const lengthSlider = document.getElementById('length-slider');
+        const lengthInput = document.getElementById('length-input');
+        const strengthBar = document.getElementById('strength-bar');
+        const strengthText = document.getElementById('strength-text');
+        const presetButtons = document.getElementById('preset-buttons');
+        const generateBtn = document.getElementById('generate');
+        const copyAllBtn = document.getElementById('copy-all');
         const passwordDisplay = document.getElementById('password-display');
         const copyMainBtn = document.getElementById('copy-main-btn');
         const copyMessageMain = document.getElementById('copy-message-main');
-        const lengthRange = document.getElementById('length-range');
-        const lengthInput = document.getElementById('length-input');
         const lengthValueSpan = document.getElementById('length-value');
-        const uppercaseCheckbox = document.getElementById('uppercase');
-        const lowercaseCheckbox = document.getElementById('lowercase');
-        const numbersCheckbox = document.getElementById('numbers');
-        const symbolsCheckbox = document.getElementById('symbols');
-        const generateBtn = document.getElementById('generate-btn');
-        const strengthIndicator = document.getElementById('strength-indicator');
-        const strengthLevel = document.getElementById('strength-level');
-        const presetLabels = document.querySelectorAll('.preset-label');
-        const additionalPasswordsContainer = document.getElementById('additional-passwords');
-        const validationIcon = document.getElementById('validation-icon');
+        
+        let passwordLength = 12;
 
-        // Define character sets
         const charSets = {
             uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
             lowercase: 'abcdefghijklmnopqrstuvwxyz',
@@ -168,106 +173,143 @@
             symbols: '!@#$%^&*()_+-=[]{}|;:",.<>?'
         };
 
-        // Function to generate a password with a given length and character set
-        const createPassword = (length, characterSet) => {
-            let password = '';
-            for (let i = 0; i < length; i++) {
-                const randomIndex = Math.floor(Math.random() * characterSet.length);
-                password += characterSet[randomIndex];
+        // Function to shuffle an array (Fisher-Yates algorithm)
+        const shuffleArray = (array) => {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
             }
-            return password;
+            return array;
         };
 
-        // Function to generate passwords and update the UI
-        const generatePasswords = () => {
-            let characterSet = '';
-            const passwordLength = parseInt(lengthInput.value, 10); // Ensure passwordLength is an integer
+        function generatePassword(length) {
+            let charset = "";
+            let requiredChars = [];
 
-            // Build character set based on selected checkboxes
-            if (uppercaseCheckbox.checked) characterSet += charSets.uppercase;
-            if (lowercaseCheckbox.checked) characterSet += charSets.lowercase;
-            if (numbersCheckbox.checked) characterSet += charSets.numbers;
-            if (symbolsCheckbox.checked) characterSet += charSets.symbols;
+            if (uppercaseEl.checked) {
+                charset += charSets.uppercase;
+                requiredChars.push(charSets.uppercase[Math.floor(Math.random() * charSets.uppercase.length)]);
+            }
+            if (lowercaseEl.checked) {
+                charset += charSets.lowercase;
+                requiredChars.push(charSets.lowercase[Math.floor(Math.random() * charSets.lowercase.length)]);
+            }
+            if (numbersEl.checked) {
+                charset += charSets.numbers;
+                requiredChars.push(charSets.numbers[Math.floor(Math.random() * charSets.numbers.length)]);
+            }
+            if (symbolsEl.checked) {
+                charset += charSets.symbols;
+                requiredChars.push(charSets.symbols[Math.floor(Math.random() * charSets.symbols.length)]);
+            }
 
-            // Stop if character set is empty
-            if (characterSet === '') {
+            if (charset.length === 0) {
+                return '';
+            }
+
+            let passwordChars = requiredChars;
+            while (passwordChars.length < length) {
+                passwordChars.push(charset[Math.floor(Math.random() * charset.length)]);
+            }
+
+            return shuffleArray(passwordChars).join('');
+        }
+
+        // --- パスワード強度を計算する新しいロジック ---
+        function calculateStrength(pass) {
+            let score = 0;
+            if (pass.length === 0) return 0;
+            
+            // 長さによるスコア (最大5ポイント)
+            score += Math.min(Math.floor(pass.length / 8), 5);
+
+            // 文字の種類によるスコア (最大5ポイント)
+            const hasUpper = /[A-Z]/.test(pass);
+            const hasLower = /[a-z]/.test(pass);
+            const hasNumbers = /[0-9]/.test(pass);
+            const hasSymbols = /[^A-Za-z0-9]/.test(pass);
+
+            if (hasUpper) score++;
+            if (hasLower) score++;
+            if (hasNumbers) score++;
+            if (hasSymbols) score++;
+
+            // 4種類すべてを含む場合のボーナススコア (1ポイント)
+            if (hasUpper && hasLower && hasNumbers && hasSymbols) {
+                score++;
+            }
+
+            return score;
+        }
+
+        function updateStrengthIndicator(pass) {
+            const score = calculateStrength(pass);
+            const maxScore = 10;
+            const percentage = (score / maxScore) * 100;
+            
+            let color = "rgb(239, 68, 68)"; // red
+            let text = "弱";
+
+            if (score >= 7) { 
+                color = "rgb(34, 197, 94)"; // green
+                text = "強"; 
+            } else if (score > 3) { 
+                color = "rgb(250, 204, 21)"; // yellow
+                text = "中"; 
+            }
+            if (pass.length === 0) {
+                color = "rgb(209, 213, 219)"; // gray
+                text = "なし";
+            }
+
+            strengthBar.style.width = percentage + "%";
+            strengthBar.style.backgroundColor = color;
+            strengthText.textContent = text;
+        }
+
+        function generatePasswords() {
+            passwordLength = parseInt(lengthInput.value, 10);
+            
+            // Generate main password
+            const mainPassword = generatePassword(passwordLength);
+            
+            if (mainPassword === '') {
                 passwordDisplay.textContent = '文字種を選択してください';
                 updateStrengthIndicator('');
-                additionalPasswordsContainer.innerHTML = '';
+                resultDiv.innerHTML = '';
                 return;
             }
 
-            // Generate main password
-            const mainPassword = createPassword(passwordLength, characterSet);
             passwordDisplay.textContent = mainPassword;
             updateStrengthIndicator(mainPassword);
 
-            // Generate 10 other candidate passwords
-            additionalPasswordsContainer.innerHTML = ''; // Clear existing candidates
+            // Generate other candidate passwords
+            resultDiv.innerHTML = "";
             for (let i = 0; i < 10; i++) {
-                const additionalPassword = createPassword(passwordLength, characterSet);
-                const passwordItem = document.createElement('div');
-                passwordItem.className = 'flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-700 rounded-lg';
-                passwordItem.innerHTML = `
-                    <span class="font-mono text-sm truncate mr-4">${additionalPassword}</span>
-                    <button class="copy-candidate-btn flex-shrink-0 flex items-center justify-center p-1 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white transition-colors duration-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                        </svg>
-                    </button>
+                const pass = generatePassword(passwordLength);
+                const container = document.createElement('div');
+                container.className = "flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-700 rounded-lg";
+                const span = document.createElement('span');
+                span.className = "flex-1 font-mono text-sm truncate mr-4";
+                span.textContent = pass;
+                const copyBtn = document.createElement('button');
+                copyBtn.className = "copy-candidate-btn flex-shrink-0 flex items-center justify-center p-1 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white transition-colors duration-200";
+                copyBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
                 `;
-                additionalPasswordsContainer.appendChild(passwordItem);
-            }
-
-            // Add event listeners to dynamically generated copy buttons
-            document.querySelectorAll('.copy-candidate-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const passwordToCopy = e.target.closest('div').querySelector('span').textContent;
-                    copyToClipboard(passwordToCopy, button);
+                copyBtn.addEventListener('click', () => {
+                    copyToClipboard(pass);
                 });
-            });
-        };
-
-        // Function to evaluate password strength and update indicator/text
-        const updateStrengthIndicator = (password) => {
-            let strength = 0;
-            const length = password.length;
-            const hasUppercase = /[A-Z]/.test(password);
-            const hasLowercase = /[a-z]/.test(password);
-            const hasNumber = /[0-9]/.test(password);
-            const hasSymbol = /[^A-Za-z0-9]/.test(password);
-
-            if (length > 0) {
-                // Score based on length (max at 40 chars)
-                strength += Math.min(length / 40, 1) * 40;
-                
-                // Score based on character types (max at 4 types)
-                let charTypes = [hasUppercase, hasLowercase, hasNumber, hasSymbol].filter(Boolean).length;
-                strength += charTypes * 15;
-                
-                // Update strength level text
-                if (strength < 40) {
-                    strengthLevel.textContent = '弱';
-                    strengthIndicator.style.backgroundColor = 'rgb(239, 68, 68)'; // red-500
-                } else if (strength < 80) {
-                    strengthLevel.textContent = '中';
-                    strengthIndicator.style.backgroundColor = 'rgb(250, 204, 21)'; // yellow-400
-                } else {
-                    strengthLevel.textContent = '強';
-                    strengthIndicator.style.backgroundColor = 'rgb(34, 197, 94)'; // green-500
-                }
-            } else {
-                strengthLevel.textContent = 'なし';
-                strengthIndicator.style.backgroundColor = 'rgb(209, 213, 219)'; // gray-300
+                container.appendChild(span);
+                container.appendChild(copyBtn);
+                resultDiv.appendChild(container);
             }
+        }
 
-            // Update indicator width
-            strengthIndicator.style.width = `${Math.min(strength, 100)}%`;
-        };
-
-        // Common function to copy text to clipboard
-        const copyToClipboard = (text, button) => {
+        function copyToClipboard(text, isMain = false) {
             if (text && text !== 'パスワード生成' && text !== '文字種を選択してください') {
                 try {
                     const textarea = document.createElement('textarea');
@@ -277,125 +319,84 @@
                     document.execCommand('copy');
                     document.body.removeChild(textarea);
 
-                    // Show success message
-                    let messageElement;
-                    if (button === copyMainBtn) {
-                        messageElement = copyMessageMain;
-                    } else {
-                        // Create a new message for candidates
-                        messageElement = document.createElement('div');
-                        messageElement.className = 'absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1 bg-green-500 text-white text-xs rounded-full opacity-0 transition-opacity duration-300';
-                        messageElement.textContent = 'コピーしました！';
-                        button.parentElement.style.position = 'relative';
-                        button.parentElement.appendChild(messageElement);
+                    if (isMain) {
+                        copyMessageMain.classList.remove('opacity-0');
+                        copyMessageMain.classList.add('opacity-100');
+                        setTimeout(() => {
+                            copyMessageMain.classList.remove('opacity-100');
+                            copyMessageMain.classList.add('opacity-0');
+                        }, 1500);
                     }
-                    
-                    messageElement.classList.remove('opacity-0');
-                    messageElement.classList.add('opacity-100');
-
-                    setTimeout(() => {
-                        messageElement.classList.remove('opacity-100');
-                        messageElement.classList.add('opacity-0');
-                        if (button !== copyMainBtn) {
-                            messageElement.remove();
-                        }
-                    }, 1500);
-
                 } catch (err) {
                     console.error('コピーに失敗しました: ', err);
                 }
             }
-        };
+        }
 
-        // Function to update preset button styles
-        const updatePresetStyles = (activeValue) => {
-            presetLabels.forEach(label => {
-                if (parseInt(label.dataset.length) === activeValue) {
-                    label.classList.add('preset-label-active');
-                    label.classList.remove('preset-label-inactive');
-                } else {
-                    label.classList.remove('preset-label-active');
-                    label.classList.add('preset-label-inactive');
-                }
+        function updateLengthUI(value) {
+            const num = parseInt(value, 10);
+            lengthSlider.value = num;
+            lengthInput.value = num;
+            lengthValueSpan.textContent = num;
+            
+            const activeLabel = document.querySelector(`label[data-length="${num}"]`);
+            document.querySelectorAll('.preset-label').forEach(label => {
+                label.classList.remove('preset-label-active');
+                label.classList.add('preset-label-inactive');
             });
-        };
-
-        const validateAndSynchronizeLength = (value) => {
-            const num = parseInt(value, 10);
-            const clampedValue = Math.min(Math.max(num, 4), 40);
-            
-            // Sync slider and value display
-            lengthRange.value = clampedValue;
-            lengthValueSpan.textContent = clampedValue;
-            
-            // Update preset button styles
-            updatePresetStyles(clampedValue);
-            
-            return clampedValue;
-        };
-
-        const updateLength = (value) => {
-            const num = parseInt(value, 10);
-            if (!isNaN(num) && num >= 4 && num <= 40) {
-                validationIcon.classList.remove('opacity-0');
-                validationIcon.classList.add('opacity-100');
-            } else {
-                validationIcon.classList.remove('opacity-100');
-                validationIcon.classList.add('opacity-0');
+            if (activeLabel) {
+                activeLabel.classList.add('preset-label-active');
+                activeLabel.classList.remove('preset-label-inactive');
             }
-            validateAndSynchronizeLength(value);
-        };
-
+        }
+        
         // Event listeners
-        generateBtn.addEventListener('click', generatePasswords);
-
-        copyMainBtn.addEventListener('click', () => {
-            copyToClipboard(passwordDisplay.textContent, copyMainBtn);
-        });
-
-        lengthRange.addEventListener('input', (e) => {
+        lengthSlider.addEventListener('input', (e) => {
             const value = e.target.value;
-            lengthInput.value = value;
-            updateLength(value);
+            updateLengthUI(value);
         });
 
-        lengthRange.addEventListener('change', () => {
-             generatePasswords();
-        });
+        lengthSlider.addEventListener('change', generatePasswords);
 
         lengthInput.addEventListener('input', (e) => {
-            const value = e.target.value;
-            updateLength(value);
+            let value = e.target.value;
+            value = Math.min(Math.max(value, 4), 40);
+            updateLengthUI(value);
         });
 
-        lengthInput.addEventListener('blur', (e) => {
-            let value = parseInt(e.target.value, 10);
-            if (isNaN(value) || value < 4) {
-                value = 4;
-            } else if (value > 40) {
-                value = 40;
-            }
-            lengthInput.value = value;
-            updateLength(value);
-            generatePasswords();
-        });
+        lengthInput.addEventListener('blur', generatePasswords);
         
-        // Use event delegation for preset labels
-        document.getElementById('preset-buttons').addEventListener('click', (e) => {
+        presetButtons.addEventListener('click', (e) => {
             const label = e.target.closest('.preset-label');
             if (label) {
                 const value = label.dataset.length;
-                lengthInput.value = value;
-                updateLength(value);
+                updateLengthUI(value);
                 generatePasswords();
             }
         });
 
-        // Initial generation on page load
-        window.addEventListener('load', () => {
-            updateLength(12);
-            generatePasswords();
+        generateBtn.addEventListener('click', generatePasswords);
+        
+        copyMainBtn.addEventListener('click', () => {
+            copyToClipboard(passwordDisplay.textContent, true);
         });
+        
+        copyAllBtn.addEventListener('click', () => {
+            const allPasswords = Array.from(resultDiv.querySelectorAll('span'))
+                .map(span => span.textContent)
+                .join('\n');
+            copyToClipboard(allPasswords);
+        });
+        
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', generatePasswords);
+        });
+
+        // Initial generation
+        window.onload = function() {
+            updateLengthUI(12);
+            generatePasswords();
+        };
     </script>
 </body>
 </html>
