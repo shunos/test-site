@@ -184,6 +184,60 @@
             background-color: #f3f4f6;
             color: #1f2937;
         }
+        
+        /* ロゴアップロードボタンのスタイル */
+        .logo-upload-box {
+            border: 2px dashed #d1d5db;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        
+        .logo-upload-box:hover {
+            border-color: #4f46e5;
+        }
+        
+        .logo-upload-text {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        
+        #logo-preview-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 1rem;
+        }
+        
+        #logo-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 0.5rem;
+        }
+        
+        #remove-logo-btn {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background-color: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s;
+        }
+        
+        #remove-logo-btn:hover {
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
@@ -265,6 +319,35 @@
                 </div>
             </div>
             
+            <!-- ロゴアップロード機能 -->
+            <div class="col-span-1 md:col-span-2">
+                <label class="block text-gray-700 text-sm mb-2">ロゴ画像（任意）：</label>
+                <div class="logo-upload-box">
+                    <input type="file" id="logo-upload" accept="image/png, image/jpeg" class="hidden">
+                    <label for="logo-upload" class="cursor-pointer">
+                        <div id="logo-preview-container" class="hidden">
+                            <img id="logo-preview" src="#" alt="ロゴプレビュー" class="w-full h-full object-contain">
+                            <button id="remove-logo-btn" type="button" class="absolute top-0 right-0 p-1 rounded-full bg-red-500 text-white shadow-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="logo-upload-placeholder" class="flex flex-col items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-4-4v0a4 4 0 014-4h4a4 4 0 014 4v0a4 4 0 01-4 4h-4z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M16 12h.01" />
+                            </svg>
+                            <span class="logo-upload-text">クリックまたはドラッグしてロゴをアップロード</span>
+                        </div>
+                    </label>
+                </div>
+                <p id="logo-message" class="mt-2 text-xs text-gray-500">
+                    推奨サイズ: 100x100px以上の正方形のPNGまたはJPEG
+                </p>
+            </div>
+            
             <!-- ダウンロード形式 -->
             <div>
                 <label for="format-select" class="block text-gray-700 text-sm mb-2">形式:</label>
@@ -281,12 +364,6 @@
             </div>
         </div>
         
-        <!--
-        // QRコード生成ボタンは不要になったためコメントアウト
-        <div class="mt-6">
-            <button id="generate-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" disabled>QRコードを生成</button>
-        </div>
-        -->
     </div>
 
     <!-- qrcode.jsライブラリを読み込み -->
@@ -295,8 +372,6 @@
     <script>
         // DOM elements
         const inputText = document.getElementById('input-text');
-        // generateBtnはコメントアウトされたので、DOM要素の取得は不要
-        // const generateBtn = document.getElementById('generate-btn');
         const qrCodeDisplay = document.getElementById('qr-code-display');
         const downloadBtn = document.getElementById('download-btn');
         const clearBtn = document.getElementById('clear-btn');
@@ -315,6 +390,14 @@
         const sizeInfoElement = document.getElementById('size-info');
         const sizeWarningElement = document.getElementById('size-warning');
         
+        // Logo-related elements
+        const logoUploadInput = document.getElementById('logo-upload');
+        const logoPreviewContainer = document.getElementById('logo-preview-container');
+        const logoPreview = document.getElementById('logo-preview');
+        const removeLogoBtn = document.getElementById('remove-logo-btn');
+        const logoUploadPlaceholder = document.getElementById('logo-upload-placeholder');
+        const logoMessage = document.getElementById('logo-message');
+
         const PLACEHOLDER_HTML = '<div id="qr-code-placeholder" class="text-gray-500 text-center">QRコードがここに表示されます。</div>';
         
         const MAX_BYTES = 2331; 
@@ -323,6 +406,7 @@
         const DEFAULT_BACKGROUND_COLOR = '#ffffff';
 
         let debounceTimeout;
+        let logoImageFile = null; // Store DataURL of the logo image
         
         /**
          * QRコードを生成・更新するメイン関数
@@ -344,6 +428,14 @@
                     return;
                 }
                 
+                // SVG形式はロゴの埋め込みに対応しないため、SVG生成の場合はロゴを無視する
+                if (format === 'svg' && logoImageFile) {
+                    logoMessage.textContent = 'SVG形式はロゴの埋め込みに対応していません。';
+                } else {
+                    logoMessage.textContent = '推奨サイズ: 100x100px以上の正方形のPNGまたはJPEG';
+                }
+
+                // 一度QRコード表示領域をクリア
                 qrCodeDisplay.innerHTML = '';
                 
                 // SVGの場合は文字列として生成
@@ -375,16 +467,54 @@
                     canvas.id = 'qr-code-canvas';
                     qrCodeDisplay.appendChild(canvas);
 
+                    // ロゴを埋め込む場合は、エラー訂正レベルを高く設定することを推奨
+                    const errorLevel = logoImageFile ? 'H' : 'M';
+                    
                     QRCode.toCanvas(canvas, text, {
                         width: size,
                         height: size,
-                        errorCorrectionLevel: 'M',
-                        margin: 4, // 静穏領域
+                        errorCorrectionLevel: errorLevel,
+                        margin: 4, // Quiet zone
                         color: {
                             dark: dotColor,
                             light: backgroundColor
                         }
                     }).then(() => {
+                        // ロゴ画像が選択されている場合、Canvasに描画
+                        if (logoImageFile) {
+                            const ctx = canvas.getContext('2d');
+                            const logo = new Image();
+                            logo.onload = () => {
+                                // ロゴのサイズと位置を計算 (QRコードのサイズの25%に設定)
+                                const logoSize = size * 0.25;
+                                const logoX = (size - logoSize) / 2;
+                                const logoY = (size - logoSize) / 2;
+                                
+                                // ロゴ画像を円形に切り抜く
+                                ctx.save();
+                                ctx.beginPath();
+                                ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2, true);
+                                ctx.closePath();
+                                ctx.clip();
+                                
+                                ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+                                
+                                ctx.restore(); // Clipping pathを元に戻す
+
+                                // ロゴの周りに白い枠を描画
+                                ctx.strokeStyle = 'white';
+                                ctx.lineWidth = 4;
+                                ctx.beginPath();
+                                ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2, true);
+                                ctx.stroke();
+                                
+                            };
+                            logo.onerror = () => {
+                                console.error('ロゴ画像の読み込みに失敗しました。');
+                                // エラー時でもQRコードは表示する
+                            };
+                            logo.src = logoImageFile; // Data URLを使用
+                        }
                         updateSizeInfo(size);
                         downloadBtn.disabled = false;
                     }).catch(err => {
@@ -466,7 +596,7 @@
             const backgroundColor = backgroundColorInput.value;
 
             if (format === 'svg') {
-                // SVG文字列をBlobに変換してダウンロード
+                // SVGはロゴを埋め込まない
                 QRCode.toString(text, { 
                     type: 'svg',
                     color: {
@@ -592,7 +722,15 @@
             generateAndUpdateQRCode();
         });
         
-        formatSelect.addEventListener('change', generateAndUpdateQRCode);
+        formatSelect.addEventListener('change', () => {
+             // SVG選択時はロゴ機能を無効化する旨のメッセージを表示
+            if (formatSelect.value === 'svg') {
+                logoMessage.textContent = 'SVG形式はロゴの埋め込みに対応していません。';
+            } else {
+                logoMessage.textContent = '推奨サイズ: 100x100px以上の正方形のPNGまたはJPEG';
+            }
+            generateAndUpdateQRCode();
+        });
 
         // カラーピッカーのセットアップ
         setupColorPicker('dot-color-input', 'dot-color-box');
@@ -607,15 +745,38 @@
             resetColor('background-color-input', 'background-color-box', DEFAULT_BACKGROUND_COLOR);
         });
 
-        // ボタンクリックでQRコードを生成
-        // generateBtn.addEventListener('click', generateAndUpdateQRCode);
-        
         downloadBtn.addEventListener('click', downloadQRCode);
         
         clearBtn.addEventListener('click', () => {
             inputText.value = '';
             updateCounts();
             generateAndUpdateQRCode();
+        });
+        
+        // --- ロゴ関連のイベントリスナー ---
+        logoUploadInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    logoImageFile = e.target.result;
+                    logoPreview.src = logoImageFile;
+                    logoPreviewContainer.classList.remove('hidden');
+                    logoUploadPlaceholder.classList.add('hidden');
+                    generateAndUpdateQRCode(); // ロゴが変更されたらQRコードを再生成
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        removeLogoBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            logoImageFile = null;
+            logoUploadInput.value = ''; // input fileをリセット
+            logoPreviewContainer.classList.add('hidden');
+            logoUploadPlaceholder.classList.remove('hidden');
+            generateAndUpdateQRCode(); // ロゴが削除されたらQRコードを再生成
         });
 
         // ページ読み込み時に初期状態を生成
