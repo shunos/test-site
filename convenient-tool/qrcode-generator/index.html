@@ -119,7 +119,6 @@
             align-items: center;
             border: 1px solid #d1d5db;
             border-radius: 0.5rem;
-            overflow: hidden;
             background-color: white;
             transition: border-color 0.2s;
         }
@@ -130,18 +129,46 @@
         }
 
         .color-input {
-            width: calc(100% - 3rem); /* カラーコード入力欄の幅を調整 */
+            flex: 1; /* 入力欄が残りのスペースを占めるように */
             padding: 0.5rem 0.75rem;
             font-size: 1rem;
             outline: none;
             border: none;
+            background: transparent;
         }
 
         .color-box {
             width: 2.5rem;
             height: 2.5rem;
-            border-left: 1px solid #d1d5db;
-            background-color: #000000; /* 初期色 */
+            border-radius: 0.25rem; /* 角を丸く */
+            margin: 0.5rem; /* 余白を追加 */
+            border: 1px solid #e5e7eb; /* 薄いボーダー */
+            cursor: pointer;
+            transition: box-shadow 0.2s;
+        }
+        
+        .color-box:hover {
+            box-shadow: 0 0 0 2px #4f46e5;
+        }
+        
+        /* リセットボタンのスタイルを調整 */
+        .subtle-reset-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            line-height: 1;
+            color: #6b7280;
+            background-color: transparent;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .subtle-reset-button:hover {
+            background-color: #f3f4f6;
+            color: #1f2937;
         }
     </style>
 </head>
@@ -199,23 +226,37 @@
             </div>
         </div>
         
-        <!-- 色選択セクションを下に移動 -->
+        <!-- 色選択セクション -->
         <div class="flex flex-col md:flex-row md:space-x-4 mb-6">
             <!-- ドットの色 -->
             <div class="w-full md:w-1/2 mb-4 md:mb-0">
-                <label for="dot-color-input" class="block text-gray-700 text-sm mb-2">QRドットの色:</label>
-                <div class="color-picker-container">
-                    <input type="text" id="dot-color-input" value="#000000" class="color-input">
-                    <div id="dot-color-box" class="color-box"></div>
+                <div class="flex items-center justify-between mb-2">
+                    <label class="block text-gray-700 text-sm">QRドットの色:</label>
+                    <button id="reset-dot-color-btn" class="subtle-reset-button" aria-label="QRドットの色をリセット">
+                        リセット
+                    </button>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="color-picker-container">
+                        <input type="text" id="dot-color-input" value="#000000" class="color-input">
+                        <div id="dot-color-box" class="color-box" style="background-color: #000000;"></div>
+                    </div>
                 </div>
             </div>
 
             <!-- 背景の色 -->
             <div class="w-full md:w-1/2">
-                <label for="background-color-input" class="block text-gray-700 text-sm mb-2">背景の色:</label>
-                <div class="color-picker-container">
-                    <input type="text" id="background-color-input" value="#ffffff" class="color-input">
-                    <div id="background-color-box" class="color-box" style="background-color: #ffffff;"></div>
+                <div class="flex items-center justify-between mb-2">
+                    <label class="block text-gray-700 text-sm">背景の色:</label>
+                    <button id="reset-background-color-btn" class="subtle-reset-button" aria-label="背景の色をリセット">
+                        リセット
+                    </button>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="color-picker-container">
+                        <input type="text" id="background-color-input" value="#ffffff" class="color-input">
+                        <div id="background-color-box" class="color-box" style="background-color: #ffffff;"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -255,6 +296,8 @@
         const dotColorBox = document.getElementById('dot-color-box');
         const backgroundColorInput = document.getElementById('background-color-input');
         const backgroundColorBox = document.getElementById('background-color-box');
+        const resetDotColorBtn = document.getElementById('reset-dot-color-btn');
+        const resetBackgroundColorBtn = document.getElementById('reset-background-color-btn');
         const sizeInfoElement = document.getElementById('size-info');
         const sizeWarningElement = document.getElementById('size-warning');
         
@@ -262,6 +305,9 @@
         
         const MAX_BYTES = 2331; 
         const MIN_SIZE_THRESHOLD = 128; // 警告を表示するQRコードの最小サイズ（px）
+        const DEFAULT_DOT_COLOR = '#000000';
+        const DEFAULT_BACKGROUND_COLOR = '#ffffff';
+
         let debounceTimeout;
         
         /**
@@ -457,7 +503,7 @@
             // カラーコード入力欄の更新
             input.addEventListener('input', () => {
                 const color = input.value;
-                if (/^#([0-9a-f]{3}){1,2}$/i.test(color)) {
+                if (/^#([0-9a-fA-F]{3}){1,2}$/.test(color)) {
                     box.style.backgroundColor = color;
                     generateAndUpdateQRCode();
                 }
@@ -487,6 +533,21 @@
 
                 nativePicker.click();
             });
+        }
+        
+        /**
+         * 色をデフォルトに戻す
+         * @param {string} inputId - カラーコード入力欄のID
+         * @param {string} boxId - 色見本のID
+         * @param {string} defaultColor - デフォルトの色
+         */
+        function resetColor(inputId, boxId, defaultColor) {
+            const input = document.getElementById(inputId);
+            const box = document.getElementById(boxId);
+            
+            input.value = defaultColor;
+            box.style.backgroundColor = defaultColor;
+            generateAndUpdateQRCode();
         }
 
         /**
@@ -524,6 +585,15 @@
         // カラーピッカーのセットアップ
         setupColorPicker('dot-color-input', 'dot-color-box');
         setupColorPicker('background-color-input', 'background-color-box');
+
+        // リセットボタンのイベントリスナー
+        resetDotColorBtn.addEventListener('click', () => {
+            resetColor('dot-color-input', 'dot-color-box', DEFAULT_DOT_COLOR);
+        });
+        
+        resetBackgroundColorBtn.addEventListener('click', () => {
+            resetColor('background-color-input', 'background-color-box', DEFAULT_BACKGROUND_COLOR);
+        });
 
         // ボタンクリックでQRコードを生成
         generateBtn.addEventListener('click', generateAndUpdateQRCode);
