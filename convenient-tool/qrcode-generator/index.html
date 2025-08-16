@@ -136,7 +136,7 @@
             background: transparent;
         }
 
-        .color-box {
+        .color-picker-native {
             width: 2.5rem;
             height: 2.5rem;
             border-radius: 0.25rem;
@@ -144,9 +144,21 @@
             border: 1px solid #e5e7eb;
             cursor: pointer;
             transition: box-shadow 0.2s;
+            -webkit-appearance: none;
+            appearance: none;
+            background-color: transparent;
         }
         
-        .color-box:hover {
+        .color-picker-native::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        
+        .color-picker-native::-webkit-color-swatch {
+            border: none;
+            border-radius: 0.25rem;
+        }
+
+        .color-picker-native:hover {
             box-shadow: 0 0 0 2px #4f46e5;
         }
         
@@ -327,7 +339,7 @@
                 <div class="flex-even-distribution">
                     <div class="color-picker-container">
                         <input type="text" id="dot-color-input" value="#000000" class="color-input">
-                        <div id="dot-color-box" class="color-box" style="background-color: #000000;"></div>
+                        <input type="color" id="dot-color-picker" value="#000000" class="color-picker-native">
                     </div>
                     <button id="reset-dot-color-btn" class="subtle-reset-button" aria-label="QRドットの色をリセット">
                         リセット
@@ -341,7 +353,7 @@
                 <div class="flex-even-distribution">
                     <div class="color-picker-container">
                         <input type="text" id="background-color-input" value="#ffffff" class="color-input">
-                        <div id="background-color-box" class="color-box" style="background-color: #ffffff;"></div>
+                        <input type="color" id="background-color-picker" value="#ffffff" class="color-picker-native">
                     </div>
                     <button id="reset-background-color-btn" class="subtle-reset-button" aria-label="背景の色をリセット">
                         リセット
@@ -445,9 +457,9 @@
         const sizeValueElement = document.getElementById('size-value');
         const formatSelect = document.getElementById('format-select');
         const dotColorInput = document.getElementById('dot-color-input');
-        const dotColorBox = document.getElementById('dot-color-box');
+        const dotColorPicker = document.getElementById('dot-color-picker');
         const backgroundColorInput = document.getElementById('background-color-input');
-        const backgroundColorBox = document.getElementById('background-color-box');
+        const backgroundColorPicker = document.getElementById('background-color-picker');
         const resetDotColorBtn = document.getElementById('reset-dot-color-btn');
         const resetBackgroundColorBtn = document.getElementById('reset-background-color-btn');
         const sizeInfoElement = document.getElementById('size-info');
@@ -609,7 +621,7 @@
             const percentage = (currentBytes / MAX_BYTES) * 100;
             charSlider.style.width = `${Math.min(percentage, 100)}%`;
             
-            // Enable/disable download button based on input content and byte limit
+            // Change slider color if byte limit is exceeded
             if (currentBytes > MAX_BYTES || text.length === 0) {
                  charSlider.classList.remove('bg-indigo-600');
                  charSlider.classList.add('bg-red-600');
@@ -705,60 +717,43 @@
         }
 
         /**
-         * Set up color picker synchronization
-         * @param {string} inputId - ID of the color input field
-         * @param {string} boxId - ID of the color swatch
+         * Set up color picker synchronization and event listeners
+         * @param {string} textInputId - ID of the text input field
+         * @param {string} pickerId - ID of the native color picker
          */
-        function setupColorPicker(inputId, boxId) {
-            const input = document.getElementById(inputId);
-            const box = document.getElementById(boxId);
+        function setupColorPicker(textInputId, pickerId) {
+            const textInput = document.getElementById(textInputId);
+            const picker = document.getElementById(pickerId);
 
-            // Update on color input change
-            input.addEventListener('input', () => {
-                const color = input.value;
-                if (/^#([0-9a-fA-F]{3}){1,2}$/.test(color)) {
-                    box.style.backgroundColor = color;
+            // Sync text input with native picker value
+            textInput.addEventListener('input', () => {
+                const color = textInput.value;
+                if (/^#[0-9a-fA-F]{6}$/.test(color) || /^#[0-9a-fA-F]{3}$/.test(color)) {
+                    picker.value = color;
                     generateAndUpdateQRCode();
                 }
             });
 
-            // Open native color picker on swatch click
-            box.addEventListener('click', () => {
-                const nativePicker = document.createElement('input');
-                nativePicker.type = 'color';
-                nativePicker.value = input.value;
-                nativePicker.style.display = 'none';
-                document.body.appendChild(nativePicker);
-
-                nativePicker.addEventListener('input', () => {
-                    input.value = nativePicker.value;
-                    box.style.backgroundColor = nativePicker.value;
-                    generateAndUpdateQRCode();
-                });
-
-                nativePicker.addEventListener('change', () => {
-                    input.value = nativePicker.value;
-                    box.style.backgroundColor = nativePicker.value;
-                    generateAndUpdateQRCode();
-                    document.body.removeChild(nativePicker);
-                });
-
-                nativePicker.click();
+            // Sync native picker with text input value in real-time
+            picker.addEventListener('input', () => {
+                textInput.value = picker.value;
+                generateAndUpdateQRCode();
             });
+            
         }
         
         /**
          * Reset color to default
-         * @param {string} inputId - ID of the color input field
-         * @param {string} boxId - ID of the color swatch
+         * @param {string} textInputId - ID of the color input field
+         * @param {string} pickerId - ID of the native color picker
          * @param {string} defaultColor - Default color
          */
-        function resetColor(inputId, boxId, defaultColor) {
-            const input = document.getElementById(inputId);
-            const box = document.getElementById(boxId);
+        function resetColor(textInputId, pickerId, defaultColor) {
+            const textInput = document.getElementById(textInputId);
+            const picker = document.getElementById(pickerId);
             
-            input.value = defaultColor;
-            box.style.backgroundColor = defaultColor;
+            textInput.value = defaultColor;
+            picker.value = defaultColor;
             generateAndUpdateQRCode();
         }
 
@@ -768,56 +763,51 @@
          */
         function handleError(message) {
             console.error('QR code error:', message);
-            qrCodeDisplay.innerHTML = `
-                <div class="text-center text-red-600 font-bold p-4 rounded-lg bg-red-100">
-                    QRコードの生成に失敗しました。<br>
-                    入力内容が正しくない可能性があります。
-                </div>
-            `;
-            downloadBtn.disabled = true;
-            sizeInfoElement.classList.add('hidden');
+            const errorPlaceholder = document.createElement('div');
+            errorPlaceholder.className = 'text-red-500 text-center';
+            errorPlaceholder.textContent = 'エラーが発生しました。入力内容を確認してください。';
+            qrCodeDisplay.innerHTML = '';
+            qrCodeDisplay.appendChild(errorPlaceholder);
         }
 
-        // Event listeners
-        // Update counts on input change
+        // --- Event Listeners and Initial Setup ---
+
+        // Input text and size slider changes
         inputText.addEventListener('input', () => {
             updateCounts();
-            generateAndUpdateQRCode();
+            generateAndUpdateQRCode(); // Real-time update for text changes
         });
-        
-        // Real-time QR code update on slider and format change
         sizeSlider.addEventListener('input', () => {
             sizeValueElement.textContent = `${sizeSlider.value}px`;
             updateSliderProgress();
             generateAndUpdateQRCode();
         });
         
-        formatSelect.addEventListener('change', () => {
-            generateAndUpdateQRCode();
-        });
-
-        // Setup color pickers
-        setupColorPicker('dot-color-input', 'dot-color-box');
-        setupColorPicker('background-color-input', 'background-color-box');
-
-        // Reset button event listeners
-        resetDotColorBtn.addEventListener('click', () => {
-            resetColor('dot-color-input', 'dot-color-box', DEFAULT_DOT_COLOR);
-        });
-        
-        resetBackgroundColorBtn.addEventListener('click', () => {
-            resetColor('background-color-input', 'background-color-box', DEFAULT_BACKGROUND_COLOR);
-        });
-
-        downloadBtn.addEventListener('click', downloadQRCode);
-        
+        // Clear button
         clearBtn.addEventListener('click', () => {
             inputText.value = '';
             updateCounts();
             generateAndUpdateQRCode();
+            logoImageFile = null;
+            logoPreviewContainer.classList.add('hidden');
+            logoUploadPlaceholder.classList.remove('hidden');
         });
+
+        // Download button
+        downloadBtn.addEventListener('click', downloadQRCode);
+
+        // Download format change
+        formatSelect.addEventListener('change', generateAndUpdateQRCode);
+
+        // Color picker setup
+        setupColorPicker('dot-color-input', 'dot-color-picker');
+        setupColorPicker('background-color-input', 'background-color-picker');
         
-        // --- Logo-related event listeners ---
+        // Reset color buttons
+        resetDotColorBtn.addEventListener('click', () => resetColor('dot-color-input', 'dot-color-picker', DEFAULT_DOT_COLOR));
+        resetBackgroundColorBtn.addEventListener('click', () => resetColor('background-color-input', 'background-color-picker', DEFAULT_BACKGROUND_COLOR));
+
+        // Logo upload and removal
         logoUploadInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -827,26 +817,51 @@
                     logoPreview.src = logoImageFile;
                     logoPreviewContainer.classList.remove('hidden');
                     logoUploadPlaceholder.classList.add('hidden');
-                    generateAndUpdateQRCode(); // Regenerate QR code when logo changes
+                    generateAndUpdateQRCode();
                 };
                 reader.readAsDataURL(file);
             }
         });
-        
-        removeLogoBtn.addEventListener('click', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
+
+        removeLogoBtn.addEventListener('click', () => {
             logoImageFile = null;
-            logoUploadInput.value = ''; // Reset file input
+            logoPreview.src = '#';
             logoPreviewContainer.classList.add('hidden');
             logoUploadPlaceholder.classList.remove('hidden');
-            generateAndUpdateQRCode(); // Regenerate QR code when logo is removed
+            logoUploadInput.value = ''; // Reset file input
+            generateAndUpdateQRCode();
         });
 
-        // Initialize on page load
-        updateCounts();
-        generateAndUpdateQRCode();
-        updateSliderProgress();
+        // Drag and drop functionality for logo
+        const logoUploadBox = document.querySelector('.logo-upload-box');
+        logoUploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            logoUploadBox.classList.add('border-indigo-500');
+        });
+        logoUploadBox.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            logoUploadBox.classList.remove('border-indigo-500');
+        });
+        logoUploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            logoUploadBox.classList.remove('border-indigo-500');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                logoUploadInput.files = files;
+                logoUploadInput.dispatchEvent(new Event('change'));
+            }
+        });
+
+        // Initial setup on window load
+        window.onload = function() {
+            updateCounts();
+            updateSliderProgress();
+            generateAndUpdateQRCode();
+        };
+
     </script>
 </body>
 </html>
