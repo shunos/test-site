@@ -237,6 +237,37 @@
         #remove-logo-btn:hover {
             transform: scale(1.1);
         }
+        
+        /* Tool description and usage guide styles */
+        .info-container {
+            margin-top: 2rem;
+            padding: 2rem;
+            background-color: #f9fafb; /* Light gray background */
+            border-radius: 1rem;
+        }
+        
+        .info-section h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+
+        .info-section p {
+            color: #4b5563;
+            line-height: 1.6;
+        }
+
+        .info-section ol {
+            list-style-type: decimal;
+            list-style-position: inside;
+            margin-left: 0.5rem;
+        }
+        
+        .info-section li {
+            margin-bottom: 0.5rem;
+            color: #4b5563;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
@@ -366,6 +397,36 @@
             </div>
         </div>
         
+        <!-- Tool description section -->
+        <div class="info-container">
+            <div class="info-section">
+                <h2 class="mb-4 text-center">ツールの説明</h2>
+                <p class="text-sm mb-4">
+                    このツールは、テキストやURLを簡単にQRコードに変換できる無料のオンラインツールです。一般的な機能に加え、QRコードのカスタマイズ機能（ドットの色、背景色、サイズの変更）や、QRコードにロゴ画像を埋め込む機能も備えています。生成されたQRコードは、PNG、JPEG、SVGの3つの形式でダウンロードできます。
+                </p>
+            </div>
+            <div class="info-section">
+                <h2 class="mb-4 text-center">使い方</h2>
+                <ol class="text-sm">
+                    <li>
+                        <strong>テキスト/URLを入力する</strong><br>
+                        上部のテキストボックスに、QRコードに変換したい文字（例：「こんにちは！」）やURL（例：`https://google.com`）を入力してください。入力と同時にQRコードが自動的に生成されます。
+                    </li>
+                    <li>
+                        <strong>QRコードをカスタマイズする</strong><br>
+                        生成されたQRコードの「サイズ」「QRドットの色」「背景の色」を自由に変更できます。下の設定項目から、スライダーやカラーピッカーを使って調整してください。
+                    </li>
+                    <li>
+                        <strong>ロゴを埋め込む（任意）</strong><br>
+                        QRコードの中央にロゴ画像を埋め込むことができます。「ロゴ画像」の項目にあるアップロードボタンから、画像ファイル（PNGまたはJPEG）を選択してください。ロゴを埋め込むと、エラー訂正レベルが「H」に設定され、多少の汚れや欠損でも読み取りが可能になります。
+                    </li>
+                    <li>
+                        <strong>QRコードをダウンロードする</strong><br>
+                        目的の形式（PNG、JPEG、SVG）を選択し、下の「ダウンロード」ボタンをクリックしてください。QRコード画像が端末に保存されます。
+                    </li>
+                </ol>
+            </div>
+        </div>
     </div>
 
     <!-- qrcode.js library -->
