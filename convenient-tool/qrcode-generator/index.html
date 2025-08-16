@@ -156,7 +156,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0.25rem 0.5rem;
+            width: 50%; /* 幅を均等に */
+            height: 2.5rem; /* 高さを固定 */
             font-size: 0.75rem;
             line-height: 1;
             color: #6b7280;
@@ -164,6 +165,19 @@
             border-radius: 0.5rem;
             border: 1px solid #d1d5db;
             transition: background-color 0.2s, color 0.2s;
+        }
+        
+        /* 色の入力欄とリセットボタンを均等に配置するための新しいスタイル */
+        .flex-even-distribution {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+
+        .flex-even-distribution > div,
+        .flex-even-distribution > button {
+            flex-grow: 1;
         }
 
         .subtle-reset-button:hover {
@@ -174,7 +188,7 @@
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
     <!-- コンテナの最大幅をxlから2xlに拡張 -->
-    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-2xl">
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-3xl">
         <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">QRコード生成ツール</h1>
 
         <label for="input-text" class="flex justify-center text-gray-700 text-sm mb-2">QRコードにしたいテキストやURLを入力してください。</label>
@@ -230,33 +244,29 @@
         <div class="flex flex-col md:flex-row md:space-x-4 mb-6">
             <!-- ドットの色 -->
             <div class="w-full md:w-1/2 mb-4 md:mb-0">
-                <div class="flex items-center justify-between mb-2">
-                    <label class="block text-gray-700 text-sm">QRドットの色:</label>
-                    <button id="reset-dot-color-btn" class="subtle-reset-button" aria-label="QRドットの色をリセット">
-                        リセット
-                    </button>
-                </div>
-                <div class="flex items-center space-x-2">
+                <label class="block text-gray-700 text-sm mb-2">QRドットの色:</label>
+                <div class="flex-even-distribution">
                     <div class="color-picker-container">
                         <input type="text" id="dot-color-input" value="#000000" class="color-input">
                         <div id="dot-color-box" class="color-box" style="background-color: #000000;"></div>
                     </div>
+                    <button id="reset-dot-color-btn" class="subtle-reset-button" aria-label="QRドットの色をリセット">
+                        リセット
+                    </button>
                 </div>
             </div>
 
             <!-- 背景の色 -->
             <div class="w-full md:w-1/2">
-                <div class="flex items-center justify-between mb-2">
-                    <label class="block text-gray-700 text-sm">背景の色:</label>
-                    <button id="reset-background-color-btn" class="subtle-reset-button" aria-label="背景の色をリセット">
-                        リセット
-                    </button>
-                </div>
-                <div class="flex items-center space-x-2">
+                <label class="block text-gray-700 text-sm mb-2">背景の色:</label>
+                <div class="flex-even-distribution">
                     <div class="color-picker-container">
                         <input type="text" id="background-color-input" value="#ffffff" class="color-input">
                         <div id="background-color-box" class="color-box" style="background-color: #ffffff;"></div>
                     </div>
+                    <button id="reset-background-color-btn" class="subtle-reset-button" aria-label="背景の色をリセット">
+                        リセット
+                    </button>
                 </div>
             </div>
         </div>
