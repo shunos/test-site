@@ -109,7 +109,8 @@
         <div class="mb-6">
             <div class="flex justify-between text-sm text-gray-500 mb-1">
                 <span id="char-count">現在: 0文字</span>
-                <span id="byte-count">現在: 0バイト / 最大: 2953バイト</span>
+                <!-- 最大バイト数を2953から2331に更新 -->
+                <span id="byte-count">現在: 0バイト / 最大: 2331バイト</span>
             </div>
             <div class="w-full bg-gray-200 rounded-full h-2.5">
                 <div id="char-slider" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" style="width: 0%;"></div>
@@ -173,7 +174,8 @@
         
         const PLACEHOLDER_HTML = '<div id="qr-code-placeholder" class="text-gray-500 text-center">QRコードがここに表示されます。</div>';
         
-        const MAX_BYTES = 2953; // QRコードの最大バイト数（バージョン40, Lレベル, UTF-8）
+        // 最大バイト数を2953から2331に更新
+        const MAX_BYTES = 2331; 
         const MIN_SIZE_THRESHOLD = 128; // 警告を表示するQRコードの最小サイズ（px）
         let debounceTimeout;
         
