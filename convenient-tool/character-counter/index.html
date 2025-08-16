@@ -4,26 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>文字数カウントツール</title>
+    <!-- Tailwind CSSを読み込む -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /*
+          サイト全体をFlexboxコンテナとして設定し、コンテンツとフッターを縦に配置します。
+          min-h-screenでページの最小高さを画面全体に設定し、フッターが常に最下部にくるようにします。
+        */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: #f0f4f8;
             color: #333;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            flex-direction: column;
+            justify-content: flex-start; /* コンテンツを上寄せに */
             min-height: 100vh;
             margin: 0;
             padding: 20px;
             box-sizing: border-box;
         }
-        .container {
+        /* メインコンテンツのコンテナ */
+        .main-container {
             width: 100%;
             max-width: 800px;
             background-color: #fff;
             padding: 30px;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin: auto; /* 中央寄せ */
+            flex-grow: 1; /* 残りのスペースを埋めて、フッターを最下部に配置 */
         }
         h1 {
             font-size: 2rem;
@@ -407,122 +416,125 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>文字数カウントツール</h1>
-        <p class="description">
-            リアルタイムで文字数を数えるツールです。SNSの投稿やレポートの執筆時に、文字数制限を気にせず文章を作成できます。入力されたテキストはブラウザ内でのみ処理されるため、外部のサーバーに送信されることはありません。安心してご利用いただけます。
-        </p>
-        
-        <!-- Googleサービスへのリンクボタンを追加 -->
-        <div class="google-links">
-            <a href="https://docs.google.com/spreadsheets/" target="_blank" rel="noopener noreferrer" class="google-button sheets">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16 11H8V9h8v2zm0 4H8v-2h8v2zm-4 4H8v-2h4v2zm8-18H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM4 20V4h16l-.01 16H4z"/></svg>
-                Google スプレッドシート
-            </a>
-            <a href="https://docs.google.com/document/" target="_blank" rel="noopener noreferrer" class="google-button docs">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm-1 8V3.5L18.5 9H13z"/></svg>
-                Google ドキュメント
-            </a>
-        </div>
-        <!-- /Googleサービスへのリンクボタン -->
-
-        <div class="controls">
-            <div class="toggle-group">
-                <label>リアルタイムカウント:</label>
-                <label class="switch">
-                    <input type="checkbox" id="realtime-toggle" checked>
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div class="button-group">
-                <button id="count-button">カウント</button>
-                <button id="reset-button">リセット</button>
-            </div>
-        </div>
-
-        <div class="textarea-container">
-            <textarea id="text-input" placeholder="ここにテキストを入力してください..."></textarea>
-            <button id="copy-button" class="copy-button">
-                <!-- コピーアイコンのSVG -->
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
-                </svg>
-                <span id="copy-tooltip" class="tooltip">コピーする</span>
-            </button>
-        </div>
-
-        <div class="results">
-            <div class="result-box">
-                <h3>文字数</h3>
-                <span id="char-count" class="count">0</span>
-            </div>
-            <div class="result-box">
-                <h3>改行を除いた文字数</h3>
-                <span id="no-newline-char-count" class="count">0</span>
-            </div>
-            <div class="result-box">
-                <h3>改行、空白を除いた文字数</h3>
-                <span id="no-space-char-count" class="count">0</span>
-            </div>
-            <div class="result-box">
-                <h3>バイト数 (UTF-8)</h3>
-                <span id="byte-count" class="count">0</span>
-            </div>
-            <div class="result-box">
-                <h3>原稿用紙の枚数 (400字換算)</h3>
-                <span id="manuscript-pages" class="count">0</span>
-            </div>
-            <div class="result-box">
-                <h3>行数</h3>
-                <span id="line-count" class="count">0</span>
-            </div>
-            <!-- SNS文字数カウントを追加 -->
-            <div class="result-box sns-count">
-                <h3>X（旧Twitter）</h3>
-                <span id="x-count" class="count">0</span><span id="x-max-count" class="max-count"> / 280</span>
-                <span class="caption">※全角文字は2文字としてカウントされます</span>
-            </div>
-            <div class="result-box sns-count">
-                <h3>Instagram</h3>
-                <span id="ig-count" class="count">0</span><span id="ig-max-count" class="max-count"> / 2,200</span>
-            </div>
-            <div class="result-box sns-count">
-                <h3>TikTok</h3>
-                <span id="tt-count" class="count">0</span><span id="tt-max-count" class="max-count"> / 2,200</span>
-            </div>
-        </div>
-        
-        <hr style="margin: 30px 0; border: 1px solid #e0e0e0;">
-
-        <div class="tool-info-section">
-            <h2>このツールについて</h2>
-            <p>
-                この「文字数カウントツール」は、X（旧Twitter）やInstagram、レポート執筆など、様々なシーンでの文字数管理をサポートするために開発されました。
-                <br>
-                リアルタイムでの文字数、バイト数、原稿用紙枚数などの多様なカウント機能に加え、Xの特殊なカウント方式にも対応しています。今後も皆さまのご意見を参考に、より使いやすいツールを目指していきます。
+    <!-- bodyをFlexboxコンテナに変更し、コンテンツとフッターを縦に配置 -->
+    <div class="main-container">
+        <div class="container">
+            <h1>文字数カウントツール</h1>
+            <p class="description">
+                リアルタイムで文字数を数えるツールです。SNSの投稿やレポートの執筆時に、文字数制限を気にせず文章を作成できます。入力されたテキストはブラウザ内でのみ処理されるため、外部のサーバーに送信されることはありません。安心してご利用いただけます。
             </p>
             
-            <h2 style="font-size: 1.5rem; color: #1a237e; text-align: center; margin-top: 30px; margin-bottom: 10px;">カウント項目の説明</h2>
-            <dl class="explanation-list">
-                <dt>文字数</dt>
-                <dd>改行やスペースを含む、入力された文字全体の数。</dd>
-                <dt>改行を除いた文字数</dt>
-                <dd>改行のみを除外してカウントした文字数。</dd>
-                <dt>改行、空白を除いた文字数</dt>
-                <dd>改行、スペース、タブなどすべての空白文字を除外した文字数。</dd>
-                <dt>バイト数 (UTF-8)</dt>
-                <dd>テキストのデータサイズ。データベースの文字数制限などに使われます。</dd>
-                <dt>原稿用紙の枚数 (400字換算)</dt>
-                <dd>400字詰めの原稿用紙に換算した場合の目安です。</dd>
-                <dt>行数</dt>
-                <dd>テキストに含まれる改行の数（空行も含む）です。</dd>
-                <dt>X（旧Twitter）</dt>
-                <dd>全角文字（日本語、句読点、記号など）は2ポイント、半角文字は1ポイントとしてカウントします。日本語など全角文字は140文字まで、英数字など半角文字は280文字まで入力可能であるため、全角を2文字として計算しています。</dd>
-                <dt>Instagram</dt>
-                <dd>文字数制限の目安として、単純な文字数を表示しています。最大文字数は2,200文字です。</dd>
-                <dt>TikTok</dt>
-                <dd>文字数制限の目安として、単純な文字数を表示しています。最大文字数は2,200文字です。</dd>
-            </dl>
+            <!-- Googleサービスへのリンクボタンを追加 -->
+            <div class="google-links">
+                <a href="https://docs.google.com/spreadsheets/" target="_blank" rel="noopener noreferrer" class="google-button sheets">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16 11H8V9h8v2zm0 4H8v-2h8v2zm-4 4H8v-2h4v2zm8-18H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM4 20V4h16l-.01 16H4z"/></svg>
+                    Google スプレッドシート
+                </a>
+                <a href="https://docs.google.com/document/" target="_blank" rel="noopener noreferrer" class="google-button docs">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm-1 8V3.5L18.5 9H13z"/></svg>
+                    Google ドキュメント
+                </a>
+            </div>
+            <!-- /Googleサービスへのリンクボタン -->
+
+            <div class="controls">
+                <div class="toggle-group">
+                    <label>リアルタイムカウント:</label>
+                    <label class="switch">
+                        <input type="checkbox" id="realtime-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="button-group">
+                    <button id="count-button">カウント</button>
+                    <button id="reset-button">リセット</button>
+                </div>
+            </div>
+
+            <div class="textarea-container">
+                <textarea id="text-input" placeholder="ここにテキストを入力してください..."></textarea>
+                <button id="copy-button" class="copy-button">
+                    <!-- コピーアイコンのSVG -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                    </svg>
+                    <span id="copy-tooltip" class="tooltip">コピーする</span>
+                </button>
+            </div>
+
+            <div class="results">
+                <div class="result-box">
+                    <h3>文字数</h3>
+                    <span id="char-count" class="count">0</span>
+                </div>
+                <div class="result-box">
+                    <h3>改行を除いた文字数</h3>
+                    <span id="no-newline-char-count" class="count">0</span>
+                </div>
+                <div class="result-box">
+                    <h3>改行、空白を除いた文字数</h3>
+                    <span id="no-space-char-count" class="count">0</span>
+                </div>
+                <div class="result-box">
+                    <h3>バイト数 (UTF-8)</h3>
+                    <span id="byte-count" class="count">0</span>
+                </div>
+                <div class="result-box">
+                    <h3>原稿用紙の枚数 (400字換算)</h3>
+                    <span id="manuscript-pages" class="count">0</span>
+                </div>
+                <div class="result-box">
+                    <h3>行数</h3>
+                    <span id="line-count" class="count">0</span>
+                </div>
+                <!-- SNS文字数カウントを追加 -->
+                <div class="result-box sns-count">
+                    <h3>X（旧Twitter）</h3>
+                    <span id="x-count" class="count">0</span><span id="x-max-count" class="max-count"> / 280</span>
+                    <span class="caption">※全角文字は2文字としてカウントされます</span>
+                </div>
+                <div class="result-box sns-count">
+                    <h3>Instagram</h3>
+                    <span id="ig-count" class="count">0</span><span id="ig-max-count" class="max-count"> / 2,200</span>
+                </div>
+                <div class="result-box sns-count">
+                    <h3>TikTok</h3>
+                    <span id="tt-count" class="count">0</span><span id="tt-max-count" class="max-count"> / 2,200</span>
+                </div>
+            </div>
+            
+            <hr style="margin: 30px 0; border: 1px solid #e0e0e0;">
+
+            <div class="tool-info-section">
+                <h2>このツールについて</h2>
+                <p>
+                    この「文字数カウントツール」は、X（旧Twitter）やInstagram、レポート執筆など、様々なシーンでの文字数管理をサポートするために開発されました。
+                    <br>
+                    リアルタイムでの文字数、バイト数、原稿用紙枚数などの多様なカウント機能に加え、Xの特殊なカウント方式にも対応しています。今後も皆さまのご意見を参考に、より使いやすいツールを目指していきます。
+                </p>
+                
+                <h2 style="font-size: 1.5rem; color: #1a237e; text-align: center; margin-top: 30px; margin-bottom: 10px;">カウント項目の説明</h2>
+                <dl class="explanation-list">
+                    <dt>文字数</dt>
+                    <dd>改行やスペースを含む、入力された文字全体の数。</dd>
+                    <dt>改行を除いた文字数</dt>
+                    <dd>改行のみを除外してカウントした文字数。</dd>
+                    <dt>改行、空白を除いた文字数</dt>
+                    <dd>改行、スペース、タブなどすべての空白文字を除外した文字数。</dd>
+                    <dt>バイト数 (UTF-8)</dt>
+                    <dd>テキストのデータサイズ。データベースの文字数制限などに使われます。</dd>
+                    <dt>原稿用紙の枚数 (400字換算)</dt>
+                    <dd>400字詰めの原稿用紙に換算した場合の目安です。</dd>
+                    <dt>行数</dt>
+                    <dd>テキストに含まれる改行の数（空行も含む）です。</dd>
+                    <dt>X（旧Twitter）</dt>
+                    <dd>全角文字（日本語、句読点、記号など）は2ポイント、半角文字は1ポイントとしてカウントします。日本語など全角文字は140文字まで、英数字など半角文字は280文字まで入力可能であるため、全角を2文字として計算しています。</dd>
+                    <dt>Instagram</dt>
+                    <dd>文字数制限の目安として、単純な文字数を表示しています。最大文字数は2,200文字です。</dd>
+                    <dt>TikTok</dt>
+                    <dd>文字数制限の目安として、単純な文字数を表示しています。最大文字数は2,200文字です。</dd>
+                </dl>
+            </div>
         </div>
     </div>
     
@@ -536,6 +548,18 @@
             </div>
         </div>
     </div>
+
+    <!-- サイトの最下部に配置されるフッター部分 -->
+    <footer class="w-full bg-white p-4 md:p-6 text-center border-t border-gray-200 mt-8">
+        <div>
+            <a href="../index.html" class="inline-flex items-center text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span>「便利ツール」一覧に戻る</span>
+            </a>
+        </div>
+    </footer>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
