@@ -52,35 +52,67 @@
             visibility: visible;
             opacity: 1;
         }
-
+        
         /* カスタムスライダーのスタイル */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #d1d5db; /* 背景色 */
+            border-radius: 9999px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* スライダーのつまみ */
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 16px;
-            height: 16px;
+            width: 20px;
+            height: 20px;
             background: #4f46e5;
             cursor: pointer;
             border-radius: 50%;
             transition: background 0.3s ease;
+            position: relative;
+            z-index: 2; /* つまみを前面に */
+            /* 新しい位置調整 */
+            transform: translateY(-50%);
+            margin-top: 4px; /* つまみがトラックの中心に来るように調整 */
         }
 
         input[type="range"]::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
+            width: 20px;
+            height: 20px;
             background: #4f46e5;
             cursor: pointer;
             border-radius: 50%;
             transition: background 0.3s ease;
         }
-
+        
         input[type="range"]:hover::-webkit-slider-thumb {
             background: #4338ca;
         }
-        
+
         input[type="range"]:hover::-moz-range-thumb {
             background: #4338ca;
         }
+
+        /* スライダーの進捗バー (修正版) */
+        input[type="range"]::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, #4f46e5 var(--thumb-position), #d1d5db var(--thumb-position));
+            height: 8px;
+            border-radius: 9999px;
+            transition: background 0.3s ease; /* スムーズなアニメーション */
+        }
+        
+        input[type="range"]::-moz-range-progress {
+            background-color: #4f46e5;
+            height: 8px;
+            border-radius: 9999px;
+        }
+        
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
@@ -121,6 +153,7 @@
             <!-- サイズスライダー -->
             <div class="w-full md:w-1/2 mb-4 md:mb-0">
                 <label for="size-slider" class="block text-gray-700 text-sm mb-2">サイズ: <span id="size-value">200px</span></label>
+                <!-- スライダーにIDを追加してJavaScriptで操作する -->
                 <input type="range" id="size-slider" min="50" max="500" value="200" step="10" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
                 <!-- 警告メッセージ -->
                 <p id="size-warning" class="text-red-600 text-sm mt-1 hidden">印刷用としてはサイズが小さすぎます（警告）</p>
@@ -128,7 +161,7 @@
 
             <!-- フォーマット選択 -->
             <div class="w-full md:w-1/2">
-                <!-- ラベルを「画像フォーマット」から「ダウンロード形式」に変更 -->
+                <!-- ラベルを「ダウンロード形式」に変更 -->
                 <label for="format-select" class="block text-gray-700 text-sm mb-2">ダウンロード形式:</label>
                 <select id="format-select" class="w-full p-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-200">
                     <option value="png">PNG</option>
@@ -290,6 +323,19 @@
                 sizeWarningElement.classList.add('hidden');
             }
         }
+        
+        /**
+         * スライダーの進捗バーを更新する
+         */
+        function updateSliderProgress() {
+            const value = sizeSlider.value;
+            const min = sizeSlider.min;
+            const max = sizeSlider.max;
+            // つまみの幅を考慮して、進捗バーの長さを調整
+            const percentage = ((value - min) / (max - min)) * 100;
+            // CSS変数を使って進捗バーの色を制御
+            sizeSlider.style.setProperty('--thumb-position', `${percentage}%`);
+        }
 
         /**
          * ダウンロード処理
@@ -357,6 +403,7 @@
         // サイズスライダーとフォーマット選択の変更時にQRコードをリアルタイム更新
         sizeSlider.addEventListener('input', () => {
             sizeValueElement.textContent = `${sizeSlider.value}px`;
+            updateSliderProgress(); // スライダーの進捗バーも更新
             generateAndUpdateQRCode();
         });
         
@@ -376,6 +423,7 @@
         // ページ読み込み時に初期状態を生成
         updateCounts();
         generateAndUpdateQRCode();
+        updateSliderProgress(); // 初回ロード時にスライダーの進捗バーを更新
     </script>
 </body>
 </html>
