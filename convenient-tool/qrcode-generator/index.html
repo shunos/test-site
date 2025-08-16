@@ -219,31 +219,26 @@
             </div>
         </div>
 
-        <!-- サイズとフォーマット設定 -->
-        <div class="flex flex-col md:flex-row md:space-x-4 mb-6">
+        <!-- QRコード表示領域 -->
+        <div class="flex flex-col justify-center items-center bg-gray-200 rounded-lg p-12 min-h-80 mb-6">
+            <div id="qr-code-display" class="flex flex-col justify-center items-center">
+                <div id="qr-code-placeholder" class="text-gray-500 text-center">QRコードがここに表示されます。</div>
+            </div>
+            <div id="size-info" class="mt-4 text-center text-gray-600 hidden"></div>
+        </div>
+
+        <!-- すべての設定をまとめて配置 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- サイズスライダー -->
-            <div class="w-full md:w-1/2 mb-4 md:mb-0">
+            <div class="col-span-1 md:col-span-2">
                 <label for="size-slider" class="block text-gray-700 text-sm mb-2">サイズ: <span id="size-value">200px</span></label>
                 <input type="range" id="size-slider" min="50" max="500" value="200" step="10" class="w-full">
                 <!-- 警告メッセージ -->
                 <p id="size-warning" class="text-red-600 text-sm mt-1 hidden">印刷用としてはサイズが小さすぎます（警告）</p>
             </div>
-
-            <!-- フォーマット選択 -->
-            <div class="w-full md:w-1/2">
-                <label for="format-select" class="block text-gray-700 text-sm mb-2">ダウンロード形式:</label>
-                <select id="format-select" class="w-full p-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-200">
-                    <option value="png">PNG</option>
-                    <option value="jpeg">JPEG</option>
-                    <option value="svg">SVG</option>
-                </select>
-            </div>
-        </div>
-        
-        <!-- 色選択セクション -->
-        <div class="flex flex-col md:flex-row md:space-x-4 mb-6">
+            
             <!-- ドットの色 -->
-            <div class="w-full md:w-1/2 mb-4 md:mb-0">
+            <div>
                 <label class="block text-gray-700 text-sm mb-2">QRドットの色:</label>
                 <div class="flex-even-distribution">
                     <div class="color-picker-container">
@@ -257,7 +252,7 @@
             </div>
 
             <!-- 背景の色 -->
-            <div class="w-full md:w-1/2">
+            <div>
                 <label class="block text-gray-700 text-sm mb-2">背景の色:</label>
                 <div class="flex-even-distribution">
                     <div class="color-picker-container">
@@ -269,21 +264,29 @@
                     </button>
                 </div>
             </div>
-        </div>
-
-        <!-- QRコード表示領域 -->
-        <div class="flex flex-col justify-center items-center bg-gray-200 rounded-lg p-12 min-h-80 mb-6">
-            <div id="qr-code-display" class="flex flex-col justify-center items-center">
-                <div id="qr-code-placeholder" class="text-gray-500 text-center">QRコードがここに表示されます。</div>
+            
+            <!-- ダウンロード形式 -->
+            <div>
+                <label for="format-select" class="block text-gray-700 text-sm mb-2">形式:</label>
+                <select id="format-select" class="w-full p-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition duration-200">
+                    <option value="png">PNG（おすすめ）</option>
+                    <option value="jpeg">JPEG</option>
+                    <option value="svg">SVG</option>
+                </select>
             </div>
-            <div id="size-info" class="mt-4 text-center text-gray-600 hidden"></div>
+            
+            <!-- ダウンロードボタン -->
+            <div class="flex items-end">
+                <button id="download-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2" disabled>ダウンロード</button>
+            </div>
         </div>
         
-        <!-- ボタン -->
-        <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-            <button id="generate-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" disabled>QRコードを生成</button>
-            <button id="download-btn" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2" disabled>ダウンロード</button>
+        <!--
+        // QRコード生成ボタンは不要になったためコメントアウト
+        <div class="mt-6">
+            <button id="generate-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" disabled>QRコードを生成</button>
         </div>
+        -->
     </div>
 
     <!-- qrcode.jsライブラリを読み込み -->
@@ -292,7 +295,8 @@
     <script>
         // DOM elements
         const inputText = document.getElementById('input-text');
-        const generateBtn = document.getElementById('generate-btn');
+        // generateBtnはコメントアウトされたので、DOM要素の取得は不要
+        // const generateBtn = document.getElementById('generate-btn');
         const qrCodeDisplay = document.getElementById('qr-code-display');
         const downloadBtn = document.getElementById('download-btn');
         const clearBtn = document.getElementById('clear-btn');
@@ -404,17 +408,15 @@
             const percentage = (currentBytes / MAX_BYTES) * 100;
             charSlider.style.width = `${Math.min(percentage, 100)}%`;
             
-            if (currentBytes > MAX_BYTES) {
-                charSlider.classList.remove('bg-indigo-600');
-                charSlider.classList.add('bg-red-600');
-                // バイト数超過時はボタンを無効化
-                generateBtn.disabled = true;
-                downloadBtn.disabled = true;
+            // 入力内容があるか、文字数超過がないかでダウンロードボタンを有効化/無効化
+            if (currentBytes > MAX_BYTES || text.length === 0) {
+                 charSlider.classList.remove('bg-indigo-600');
+                 charSlider.classList.add('bg-red-600');
+                 downloadBtn.disabled = true;
             } else {
-                charSlider.classList.remove('bg-red-600');
-                charSlider.classList.add('bg-indigo-600');
-                // 入力がある場合は有効化
-                generateBtn.disabled = text.length === 0;
+                 charSlider.classList.remove('bg-red-600');
+                 charSlider.classList.add('bg-indigo-600');
+                 downloadBtn.disabled = false;
             }
         }
         
@@ -606,7 +608,7 @@
         });
 
         // ボタンクリックでQRコードを生成
-        generateBtn.addEventListener('click', generateAndUpdateQRCode);
+        // generateBtn.addEventListener('click', generateAndUpdateQRCode);
         
         downloadBtn.addEventListener('click', downloadQRCode);
         
