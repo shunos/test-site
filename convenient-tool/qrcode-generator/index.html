@@ -52,6 +52,35 @@
             visibility: visible;
             opacity: 1;
         }
+
+        /* カスタムスライダーのスタイル */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #4f46e5;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: background 0.3s ease;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #4f46e5;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: background 0.3s ease;
+        }
+
+        input[type="range"]:hover::-webkit-slider-thumb {
+            background: #4338ca;
+        }
+        
+        input[type="range"]:hover::-moz-range-thumb {
+            background: #4338ca;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
@@ -86,6 +115,25 @@
             </div>
         </div>
 
+        <!-- サイズとフォーマット設定 -->
+        <div class="flex flex-col md:flex-row md:space-x-4 mb-6">
+            <!-- サイズスライダー -->
+            <div class="w-full md:w-1/2 mb-4 md:mb-0">
+                <label for="size-slider" class="block text-gray-700 text-sm mb-2">サイズ: <span id="size-value">200px</span></label>
+                <input type="range" id="size-slider" min="50" max="500" value="200" step="10" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+            </div>
+
+            <!-- フォーマット選択 -->
+            <div class="w-full md:w-1/2">
+                <label for="format-select" class="block text-gray-700 text-sm mb-2">画像フォーマット:</label>
+                <select id="format-select" class="w-full p-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-200">
+                    <option value="png">PNG</option>
+                    <option value="jpeg">JPEG</option>
+                    <option value="svg">SVG</option>
+                </select>
+            </div>
+        </div>
+
         <!-- QRコード表示領域 -->
         <div id="qr-code-container" class="flex justify-center items-center h-80 bg-gray-200 rounded-lg p-12 mb-6">
             <div id="qr-code-placeholder" class="text-gray-500 text-center">QRコードがここに表示されます。</div>
@@ -111,10 +159,13 @@
         const charCountElement = document.getElementById('char-count');
         const byteCountElement = document.getElementById('byte-count');
         const charSlider = document.getElementById('char-slider');
+        const sizeSlider = document.getElementById('size-slider');
+        const sizeValueElement = document.getElementById('size-value');
+        const formatSelect = document.getElementById('format-select');
         const PLACEHOLDER_HTML = '<div id="qr-code-placeholder" class="text-gray-500 text-center">QRコードがここに表示されます。</div>';
         
         // QRコードのサイズ設定
-        const qrSize = 200; 
+        let qrSize = 200; 
         const MAX_BYTES = 2953; // QRコードの最大バイト数（バージョン40-L, UTF-8）
 
         /**
@@ -155,7 +206,8 @@
          */
         function generateQRCode() {
             const text = inputText.value;
-
+            qrSize = parseInt(sizeSlider.value, 10);
+            
             // 入力が空の場合、UIをリセット
             if (text.length === 0) {
                 qrCodeContainer.innerHTML = PLACEHOLDER_HTML;
@@ -174,8 +226,40 @@
                 qr.addData(text);
                 qr.make();
 
-                const imgTag = qr.createImgTag(4, 10); // 4pxのセルサイズ, 10pxの余白
-                qrCodeContainer.innerHTML = imgTag;
+                // 余白（静穏領域）のサイズを計算
+                const quietZone = 4; // QRコードの規格で推奨される最小セル数
+                const moduleCount = qr.getModuleCount();
+                const scale = 10;
+                
+                // キャンバスの新しいサイズを計算
+                const canvasSize = (moduleCount + quietZone * 2) * scale;
+                const canvas = document.createElement('canvas');
+                canvas.width = canvasSize;
+                canvas.height = canvasSize;
+                
+                const context = canvas.getContext('2d');
+                context.fillStyle = "#ffffff"; // 背景色
+                context.fillRect(0, 0, canvasSize, canvasSize);
+                
+                // QRコードのセルを描画（余白を考慮してオフセットをかける）
+                const offset = quietZone * scale;
+                for (let row = 0; row < moduleCount; row++) {
+                    for (let col = 0; col < moduleCount; col++) {
+                        if (qr.isDark(row, col)) {
+                            context.fillStyle = "#000000"; // QRコードの色
+                            context.fillRect(col * scale + offset, row * scale + offset, scale, scale);
+                        }
+                    }
+                }
+
+                // キャンバスを<img>タグに変換
+                const img = document.createElement('img');
+                img.src = canvas.toDataURL('image/png');
+                img.style.width = `${qrSize}px`;
+                img.style.height = `${qrSize}px`;
+
+                qrCodeContainer.innerHTML = '';
+                qrCodeContainer.appendChild(img);
                 
                 downloadBtn.disabled = false;
 
@@ -196,23 +280,90 @@
          * QRコード画像をダウンロードする関数
          */
         function downloadQRCode() {
-            const imgElement = qrCodeContainer.querySelector('img');
-            if (!imgElement) {
-                return;
+            const text = inputText.value;
+            const format = formatSelect.value;
+            const filename = `qr_code_${format}`;
+            
+            const typeNumber = 0; // 最適なバージョンを自動選択
+            const errorCorrectionLevel = 'M'; // エラー訂正レベル
+            const qr = qrcode(typeNumber, errorCorrectionLevel);
+            qr.addData(text);
+            qr.make();
+
+            let dataUrl;
+
+            if (format === 'svg') {
+                // SVG形式でダウンロード
+                const svgString = qr.createSvgTag({
+                    cell_size: 10,
+                    margin: 4 // QRコードの余白をSVGに適用
+                });
+                const blob = new Blob([svgString], { type: 'image/svg+xml' });
+                dataUrl = URL.createObjectURL(blob);
+
+            } else {
+                // PNGまたはJPEG形式でダウンロード
+                const quietZone = 4;
+                const moduleCount = qr.getModuleCount();
+                const scale = 10;
+                
+                const canvasSize = (moduleCount + quietZone * 2) * scale;
+                const canvas = document.createElement('canvas');
+                canvas.width = canvasSize;
+                canvas.height = canvasSize;
+                
+                const context = canvas.getContext('2d');
+                context.fillStyle = "#ffffff";
+                context.fillRect(0, 0, canvasSize, canvasSize);
+                
+                const offset = quietZone * scale;
+                for (let row = 0; row < moduleCount; row++) {
+                    for (let col = 0; col < moduleCount; col++) {
+                        if (qr.isDark(row, col)) {
+                            context.fillStyle = "#000000";
+                            context.fillRect(col * scale + offset, row * scale + offset, scale, scale);
+                        }
+                    }
+                }
+                
+                dataUrl = canvas.toDataURL(`image/${format}`);
             }
 
             const link = document.createElement('a');
-            link.href = imgElement.src;
-            link.download = 'qr_code.png';
+            link.href = dataUrl;
+            link.download = filename;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+
+            if (format === 'svg') {
+                URL.revokeObjectURL(dataUrl);
+            }
         }
 
         // イベントリスナー
         generateBtn.addEventListener('click', generateQRCode);
         downloadBtn.addEventListener('click', downloadQRCode);
-        inputText.addEventListener('input', updateCounts);
+        inputText.addEventListener('input', () => {
+            updateCounts();
+            generateQRCode(); // 入力内容が変更されたらリアルタイムで更新
+        });
+        
+        // サイズスライダーのイベントリスナー
+        sizeSlider.addEventListener('input', () => {
+            sizeValueElement.textContent = `${sizeSlider.value}px`;
+            // QRコードが既に生成されている場合のみ、サイズをリアルタイムで更新
+            const imgElement = qrCodeContainer.querySelector('img');
+            if (imgElement) {
+                imgElement.style.width = `${sizeSlider.value}px`;
+                imgElement.style.height = `${sizeSlider.value}px`;
+            }
+        });
+
+        // フォーマット選択のイベントリスナー
+        formatSelect.addEventListener('change', () => {
+            generateQRCode(); // フォーマットが変更されたらリアルタイムで更新
+        });
 
         // クリアボタンのクリック処理
         clearBtn.addEventListener('click', () => {
