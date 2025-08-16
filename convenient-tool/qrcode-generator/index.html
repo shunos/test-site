@@ -112,7 +112,37 @@
             height: 8px;
             border-radius: 9999px;
         }
-        
+
+        /* カスタムカラーピッカーのスタイル */
+        .color-picker-container {
+            display: flex;
+            align-items: center;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            background-color: white;
+            transition: border-color 0.2s;
+        }
+
+        .color-picker-container:focus-within {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.5);
+        }
+
+        .color-input {
+            width: calc(100% - 3rem); /* カラーコード入力欄の幅を調整 */
+            padding: 0.5rem 0.75rem;
+            font-size: 1rem;
+            outline: none;
+            border: none;
+        }
+
+        .color-box {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-left: 1px solid #d1d5db;
+            background-color: #000000; /* 初期色 */
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
@@ -153,21 +183,40 @@
             <!-- サイズスライダー -->
             <div class="w-full md:w-1/2 mb-4 md:mb-0">
                 <label for="size-slider" class="block text-gray-700 text-sm mb-2">サイズ: <span id="size-value">200px</span></label>
-                <!-- スライダーにIDを追加してJavaScriptで操作する -->
-                <input type="range" id="size-slider" min="50" max="500" value="200" step="10" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                <input type="range" id="size-slider" min="50" max="500" value="200" step="10" class="w-full">
                 <!-- 警告メッセージ -->
                 <p id="size-warning" class="text-red-600 text-sm mt-1 hidden">印刷用としてはサイズが小さすぎます（警告）</p>
             </div>
 
             <!-- フォーマット選択 -->
             <div class="w-full md:w-1/2">
-                <!-- ラベルを「ダウンロード形式」に変更 -->
                 <label for="format-select" class="block text-gray-700 text-sm mb-2">ダウンロード形式:</label>
                 <select id="format-select" class="w-full p-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-200">
                     <option value="png">PNG</option>
                     <option value="jpeg">JPEG</option>
                     <option value="svg">SVG</option>
                 </select>
+            </div>
+        </div>
+        
+        <!-- 色選択セクションを下に移動 -->
+        <div class="flex flex-col md:flex-row md:space-x-4 mb-6">
+            <!-- ドットの色 -->
+            <div class="w-full md:w-1/2 mb-4 md:mb-0">
+                <label for="dot-color-input" class="block text-gray-700 text-sm mb-2">QRドットの色:</label>
+                <div class="color-picker-container">
+                    <input type="text" id="dot-color-input" value="#000000" class="color-input">
+                    <div id="dot-color-box" class="color-box"></div>
+                </div>
+            </div>
+
+            <!-- 背景の色 -->
+            <div class="w-full md:w-1/2">
+                <label for="background-color-input" class="block text-gray-700 text-sm mb-2">背景の色:</label>
+                <div class="color-picker-container">
+                    <input type="text" id="background-color-input" value="#ffffff" class="color-input">
+                    <div id="background-color-box" class="color-box" style="background-color: #ffffff;"></div>
+                </div>
             </div>
         </div>
 
@@ -202,6 +251,10 @@
         const sizeSlider = document.getElementById('size-slider');
         const sizeValueElement = document.getElementById('size-value');
         const formatSelect = document.getElementById('format-select');
+        const dotColorInput = document.getElementById('dot-color-input');
+        const dotColorBox = document.getElementById('dot-color-box');
+        const backgroundColorInput = document.getElementById('background-color-input');
+        const backgroundColorBox = document.getElementById('background-color-box');
         const sizeInfoElement = document.getElementById('size-info');
         const sizeWarningElement = document.getElementById('size-warning');
         
@@ -220,6 +273,8 @@
                 const text = inputText.value;
                 const size = parseInt(sizeSlider.value, 10);
                 const format = formatSelect.value;
+                const dotColor = dotColorInput.value;
+                const backgroundColor = backgroundColorInput.value;
                 
                 // 入力内容がない場合はプレースホルダーを表示
                 if (text.length === 0) {
@@ -239,8 +294,8 @@
                         margin: 4,
                         scale: size / 25, // SVGのサイズをスライダーに合わせる
                         color: {
-                            dark: '#000000',
-                            light: '#FFFFFF'
+                            dark: dotColor,
+                            light: backgroundColor
                         }
                     }).then(svgString => {
                         const div = document.createElement('div');
@@ -264,7 +319,11 @@
                         width: size,
                         height: size,
                         errorCorrectionLevel: 'M',
-                        margin: 4 // 静穏領域
+                        margin: 4, // 静穏領域
+                        color: {
+                            dark: dotColor,
+                            light: backgroundColor
+                        }
                     }).then(() => {
                         updateSizeInfo(size);
                         downloadBtn.disabled = false;
@@ -345,9 +404,18 @@
             const format = formatSelect.value;
             const filename = `qr_code.${format}`;
             
+            const dotColor = dotColorInput.value;
+            const backgroundColor = backgroundColorInput.value;
+
             if (format === 'svg') {
                 // SVG文字列をBlobに変換してダウンロード
-                QRCode.toString(text, { type: 'svg' }).then(svgString => {
+                QRCode.toString(text, { 
+                    type: 'svg',
+                    color: {
+                        dark: dotColor,
+                        light: backgroundColor
+                    }
+                }).then(svgString => {
                     const blob = new Blob([svgString], { type: 'image/svg+xml' });
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');
@@ -375,6 +443,50 @@
                 link.click();
                 document.body.removeChild(link);
             }
+        }
+
+        /**
+         * カラーコードの入力と色見本の同期
+         * @param {string} inputId - カラーコード入力欄のID
+         * @param {string} boxId - 色見本のID
+         */
+        function setupColorPicker(inputId, boxId) {
+            const input = document.getElementById(inputId);
+            const box = document.getElementById(boxId);
+
+            // カラーコード入力欄の更新
+            input.addEventListener('input', () => {
+                const color = input.value;
+                if (/^#([0-9a-f]{3}){1,2}$/i.test(color)) {
+                    box.style.backgroundColor = color;
+                    generateAndUpdateQRCode();
+                }
+            });
+
+            // 色見本のクリックでネイティブカラーピッカーを起動
+            box.addEventListener('click', () => {
+                const nativePicker = document.createElement('input');
+                nativePicker.type = 'color';
+                nativePicker.value = input.value;
+                nativePicker.style.display = 'none';
+                document.body.appendChild(nativePicker);
+
+                nativePicker.addEventListener('input', () => {
+                    input.value = nativePicker.value;
+                    box.style.backgroundColor = nativePicker.value;
+                    generateAndUpdateQRCode();
+                });
+
+                nativePicker.addEventListener('change', () => {
+                    // changeイベントでも更新
+                    input.value = nativePicker.value;
+                    box.style.backgroundColor = nativePicker.value;
+                    generateAndUpdateQRCode();
+                    document.body.removeChild(nativePicker);
+                });
+
+                nativePicker.click();
+            });
         }
 
         /**
@@ -408,6 +520,10 @@
         });
         
         formatSelect.addEventListener('change', generateAndUpdateQRCode);
+
+        // カラーピッカーのセットアップ
+        setupColorPicker('dot-color-input', 'dot-color-box');
+        setupColorPicker('background-color-input', 'background-color-box');
 
         // ボタンクリックでQRコードを生成
         generateBtn.addEventListener('click', generateAndUpdateQRCode);
