@@ -121,6 +121,8 @@
             <div class="w-full md:w-1/2 mb-4 md:mb-0">
                 <label for="size-slider" class="block text-gray-700 text-sm mb-2">サイズ: <span id="size-value">200px</span></label>
                 <input type="range" id="size-slider" min="50" max="500" value="200" step="10" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                <!-- 警告メッセージ -->
+                <p id="size-warning" class="text-red-600 text-sm mt-1 hidden">印刷用としてはサイズが小さすぎます（警告）</p>
             </div>
 
             <!-- フォーマット選択 -->
@@ -166,10 +168,12 @@
         const sizeValueElement = document.getElementById('size-value');
         const formatSelect = document.getElementById('format-select');
         const sizeInfoElement = document.getElementById('size-info');
+        const sizeWarningElement = document.getElementById('size-warning');
         
         const PLACEHOLDER_HTML = '<div id="qr-code-placeholder" class="text-gray-500 text-center">QRコードがここに表示されます。</div>';
         
         const MAX_BYTES = 2953; // QRコードの最大バイト数（バージョン40, Lレベル, UTF-8）
+        const MIN_SIZE_THRESHOLD = 128; // 警告を表示するQRコードの最小サイズ（px）
         let debounceTimeout;
         
         /**
@@ -265,7 +269,7 @@
         }
         
         /**
-         * ピクセルと印刷サイズ情報を更新する
+         * ピクセルと印刷サイズ情報を更新し、警告を表示する
          * @param {number} size - QRコードのピクセルサイズ
          */
         function updateSizeInfo(size) {
@@ -276,6 +280,13 @@
                 <p>サイズ: ${size}px × ${size}px</p>
                 <p class="mt-1 text-xs text-gray-500">推奨印刷サイズ (300dpi): 約 ${printSizeCm}cm × ${printSizeCm}cm</p>
             `;
+
+            // 警告メッセージの表示判定
+            if (size < MIN_SIZE_THRESHOLD) {
+                sizeWarningElement.classList.remove('hidden');
+            } else {
+                sizeWarningElement.classList.add('hidden');
+            }
         }
 
         /**
@@ -335,29 +346,34 @@
         }
 
         // イベントリスナー
-        // 入力値変更時にQRコードをリアルタイム更新
-        inputText.addEventListener('input', updateCounts);
+        // 入力値変更時に文字数とバイト数を更新
+        inputText.addEventListener('input', () => {
+            updateCounts();
+            generateAndUpdateQRCode();
+        });
+        
+        // サイズスライダーとフォーマット選択の変更時にQRコードをリアルタイム更新
         sizeSlider.addEventListener('input', () => {
             sizeValueElement.textContent = `${sizeSlider.value}px`;
+            generateAndUpdateQRCode();
         });
+        
+        formatSelect.addEventListener('change', generateAndUpdateQRCode);
 
         // ボタンクリックでQRコードを生成
         generateBtn.addEventListener('click', generateAndUpdateQRCode);
         
-        // リアルタイムプレビュー
-        inputText.addEventListener('input', generateAndUpdateQRCode);
-        sizeSlider.addEventListener('input', generateAndUpdateQRCode);
-        formatSelect.addEventListener('change', generateAndUpdateQRCode);
-
         downloadBtn.addEventListener('click', downloadQRCode);
         
         clearBtn.addEventListener('click', () => {
             inputText.value = '';
             updateCounts();
+            generateAndUpdateQRCode();
         });
 
         // ページ読み込み時に初期状態を生成
         updateCounts();
+        generateAndUpdateQRCode();
     </script>
 </body>
 </html>
