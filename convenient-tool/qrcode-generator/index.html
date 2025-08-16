@@ -135,25 +135,28 @@
         </div>
 
         <!-- QRコード表示領域 -->
-        <div id="qr-code-container" class="flex justify-center items-center h-80 bg-gray-200 rounded-lg p-12 mb-6">
-            <div id="qr-code-placeholder" class="text-gray-500 text-center">QRコードがここに表示されます。</div>
+        <div class="flex flex-col justify-center items-center bg-gray-200 rounded-lg p-12 min-h-80 mb-6">
+            <div id="qr-code-display" class="flex flex-col justify-center items-center">
+                <div id="qr-code-placeholder" class="text-gray-500 text-center">QRコードがここに表示されます。</div>
+            </div>
+            <div id="size-info" class="mt-4 text-center text-gray-600 hidden"></div>
         </div>
         
         <!-- ボタン -->
-        <div class="flex flex-col space-y-4">
-            <button id="generate-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" disabled>QRコードを生成</button>
-            <button id="download-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2" disabled>ダウンロード</button>
+        <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
+            <button id="generate-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" disabled>QRコードを生成</button>
+            <button id="download-btn" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2" disabled>ダウンロード</button>
         </div>
     </div>
 
-    <!-- QRコードライブラリを切り替え -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+    <!-- qrcode.jsライブラリを読み込み -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.0/build/qrcode.min.js"></script>
 
     <script>
         // DOM elements
         const inputText = document.getElementById('input-text');
         const generateBtn = document.getElementById('generate-btn');
-        const qrCodeContainer = document.getElementById('qr-code-container');
+        const qrCodeDisplay = document.getElementById('qr-code-display');
         const downloadBtn = document.getElementById('download-btn');
         const clearBtn = document.getElementById('clear-btn');
         const charCountElement = document.getElementById('char-count');
@@ -162,14 +165,79 @@
         const sizeSlider = document.getElementById('size-slider');
         const sizeValueElement = document.getElementById('size-value');
         const formatSelect = document.getElementById('format-select');
+        const sizeInfoElement = document.getElementById('size-info');
+        
         const PLACEHOLDER_HTML = '<div id="qr-code-placeholder" class="text-gray-500 text-center">QRコードがここに表示されます。</div>';
         
-        // QR code size
-        let qrSize = 200; 
-        const MAX_BYTES = 2953; // Maximum bytes for a QR code (Version 40-L, UTF-8)
-
+        const MAX_BYTES = 2953; // QRコードの最大バイト数（バージョン40, Lレベル, UTF-8）
+        let debounceTimeout;
+        
         /**
-         * Updates character count and slider
+         * QRコードを生成・更新するメイン関数
+         */
+        function generateAndUpdateQRCode() {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => {
+                const text = inputText.value;
+                const size = parseInt(sizeSlider.value, 10);
+                const format = formatSelect.value;
+                
+                // 入力内容がない場合はプレースホルダーを表示
+                if (text.length === 0) {
+                    qrCodeDisplay.innerHTML = PLACEHOLDER_HTML;
+                    sizeInfoElement.classList.add('hidden');
+                    downloadBtn.disabled = true;
+                    return;
+                }
+                
+                qrCodeDisplay.innerHTML = '';
+                
+                // SVGの場合は文字列として生成
+                if (format === 'svg') {
+                    QRCode.toString(text, {
+                        type: 'svg',
+                        errorCorrectionLevel: 'M',
+                        margin: 4,
+                        scale: size / 25, // SVGのサイズをスライダーに合わせる
+                        color: {
+                            dark: '#000000',
+                            light: '#FFFFFF'
+                        }
+                    }).then(svgString => {
+                        const div = document.createElement('div');
+                        div.innerHTML = svgString;
+                        const svgElement = div.firstChild;
+                        svgElement.style.width = `${size}px`;
+                        svgElement.style.height = `${size}px`;
+                        qrCodeDisplay.appendChild(svgElement);
+                        updateSizeInfo(size);
+                        downloadBtn.disabled = false;
+                    }).catch(err => {
+                        handleError(err);
+                    });
+                } else {
+                    // PNG/JPEGの場合はCanvasに描画
+                    const canvas = document.createElement('canvas');
+                    canvas.id = 'qr-code-canvas';
+                    qrCodeDisplay.appendChild(canvas);
+
+                    QRCode.toCanvas(canvas, text, {
+                        width: size,
+                        height: size,
+                        errorCorrectionLevel: 'M',
+                        margin: 4 // 静穏領域
+                    }).then(() => {
+                        updateSizeInfo(size);
+                        downloadBtn.disabled = false;
+                    }).catch(err => {
+                        handleError(err);
+                    });
+                }
+            }, 300); // 300msのデバウンス
+        }
+        
+        /**
+         * 文字数とバイト数、スライダーを更新する
          */
         function updateCounts() {
             const text = inputText.value;
@@ -182,136 +250,113 @@
             const percentage = (currentBytes / MAX_BYTES) * 100;
             charSlider.style.width = `${Math.min(percentage, 100)}%`;
             
-            // Change slider color and disable button if byte limit is exceeded
             if (currentBytes > MAX_BYTES) {
                 charSlider.classList.remove('bg-indigo-600');
                 charSlider.classList.add('bg-red-600');
+                // バイト数超過時はボタンを無効化
                 generateBtn.disabled = true;
+                downloadBtn.disabled = true;
             } else {
                 charSlider.classList.remove('bg-red-600');
                 charSlider.classList.add('bg-indigo-600');
-                // Enable button only if there is input
+                // 入力がある場合は有効化
                 generateBtn.disabled = text.length === 0;
             }
-
-            // Reset UI if input starts while error message is displayed
-            if (qrCodeContainer.innerHTML.includes('text-red-600')) {
-                qrCodeContainer.innerHTML = PLACEHOLDER_HTML;
-                downloadBtn.disabled = true;
-            }
         }
-
+        
         /**
-         * Generates the QR code
+         * ピクセルと印刷サイズ情報を更新する
+         * @param {number} size - QRコードのピクセルサイズ
          */
-        function generateQRCode() {
-            const text = inputText.value;
-            qrSize = parseInt(sizeSlider.value, 10);
-            
-            if (text.length === 0) {
-                qrCodeContainer.innerHTML = PLACEHOLDER_HTML;
-                downloadBtn.disabled = true;
-                return;
-            }
-            
-            qrCodeContainer.innerHTML = '';
-            
-            // Create a new canvas element
-            const canvas = document.createElement('canvas');
-            canvas.style.width = `${qrSize}px`;
-            canvas.style.height = `${qrSize}px`;
-
-            // Use the new qrcode.js library to draw on the canvas
-            QRCode.toCanvas(canvas, text, {
-                errorCorrectionLevel: 'M',
-                margin: 4, // Handles the quiet zone
-                scale: 10,
-                color: {
-                    dark: '#000000',
-                    light: '#FFFFFF'
-                }
-            }).then(() => {
-                // After drawing, convert the canvas to an image and append
-                const img = document.createElement('img');
-                img.src = canvas.toDataURL('image/png');
-                img.style.width = `${qrSize}px`;
-                img.style.height = `${qrSize}px`;
-                qrCodeContainer.appendChild(img);
-                downloadBtn.disabled = false;
-            }).catch(err => {
-                console.error('QR code generation failed:', err);
-                qrCodeContainer.innerHTML = `
-                    <div class="text-center text-red-600 font-bold p-4 rounded-lg bg-red-100">
-                        QRコードの生成に失敗しました。<br>
-                        入力内容を確認してください。
-                    </div>
-                `;
-                downloadBtn.disabled = true;
-            });
+        function updateSizeInfo(size) {
+            const dpi = 300; 
+            const printSizeCm = (size / dpi * 2.54).toFixed(1);
+            sizeInfoElement.classList.remove('hidden');
+            sizeInfoElement.innerHTML = `
+                <p>サイズ: ${size}px × ${size}px</p>
+                <p class="mt-1 text-xs text-gray-500">推奨印刷サイズ (300dpi): 約 ${printSizeCm}cm × ${printSizeCm}cm</p>
+            `;
         }
 
         /**
-         * Downloads the QR code image
+         * ダウンロード処理
          */
         function downloadQRCode() {
             const text = inputText.value;
             const format = formatSelect.value;
-            const filename = `qr_code_${format}`;
+            const filename = `qr_code.${format}`;
             
-            // Use qrcode.js to get the data URL
-            QRCode.toDataURL(text, {
-                errorCorrectionLevel: 'M',
-                margin: 4,
-                scale: 10,
-                type: `image/${format}`,
-                color: {
-                    dark: '#000000',
-                    light: '#FFFFFF'
+            if (format === 'svg') {
+                // SVG文字列をBlobに変換してダウンロード
+                QRCode.toString(text, { type: 'svg' }).then(svgString => {
+                    const blob = new Blob([svgString], { type: 'image/svg+xml' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }).catch(err => {
+                    handleError(err);
+                });
+            } else {
+                // CanvasのデータURLを取得してダウンロード
+                const canvas = document.getElementById('qr-code-canvas');
+                if (!canvas) {
+                    handleError('Canvas element not found.');
+                    return;
                 }
-            }).then(url => {
+                const url = canvas.toDataURL(`image/${format}`);
                 const link = document.createElement('a');
                 link.href = url;
                 link.download = filename;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-            }).catch(err => {
-                console.error('Download failed:', err);
-                alert('ダウンロードに失敗しました。');
-            });
+            }
         }
 
-        // Event listeners
-        generateBtn.addEventListener('click', generateQRCode);
-        downloadBtn.addEventListener('click', downloadQRCode);
-        inputText.addEventListener('input', () => {
-            updateCounts();
-            generateQRCode(); // Update in real-time
-        });
-        
+        /**
+         * エラーメッセージを表示する
+         * @param {string} message - 表示するエラーメッセージ
+         */
+        function handleError(message) {
+            console.error('QR code error:', message);
+            qrCodeDisplay.innerHTML = `
+                <div class="text-center text-red-600 font-bold p-4 rounded-lg bg-red-100">
+                    QRコードの生成に失敗しました。<br>
+                    入力内容が正しくない可能性があります。
+                </div>
+            `;
+            downloadBtn.disabled = true;
+            sizeInfoElement.classList.add('hidden');
+        }
+
+        // イベントリスナー
+        // 入力値変更時にQRコードをリアルタイム更新
+        inputText.addEventListener('input', updateCounts);
         sizeSlider.addEventListener('input', () => {
             sizeValueElement.textContent = `${sizeSlider.value}px`;
-            const imgElement = qrCodeContainer.querySelector('img');
-            if (imgElement) {
-                imgElement.style.width = `${sizeSlider.value}px`;
-                imgElement.style.height = `${sizeSlider.value}px`;
-            }
         });
 
-        formatSelect.addEventListener('change', () => {
-            generateQRCode();
-        });
+        // ボタンクリックでQRコードを生成
+        generateBtn.addEventListener('click', generateAndUpdateQRCode);
+        
+        // リアルタイムプレビュー
+        inputText.addEventListener('input', generateAndUpdateQRCode);
+        sizeSlider.addEventListener('input', generateAndUpdateQRCode);
+        formatSelect.addEventListener('change', generateAndUpdateQRCode);
 
-        // Clear button click handler
+        downloadBtn.addEventListener('click', downloadQRCode);
+        
         clearBtn.addEventListener('click', () => {
             inputText.value = '';
-            qrCodeContainer.innerHTML = PLACEHOLDER_HTML;
             updateCounts();
-            generateBtn.disabled = true;
-            downloadBtn.disabled = true;
         });
 
-        // Initial update on page load
+        // ページ読み込み時に初期状態を生成
         updateCounts();
     </script>
 </body>
