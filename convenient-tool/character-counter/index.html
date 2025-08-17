@@ -21,7 +21,7 @@
         }
         .container {
             width: 100%;
-            max-width: 800px; /* 元の幅に戻す */
+            max-width: 800px;
             background-color: #fff;
             padding: 30px;
             border-radius: 15px;
@@ -178,9 +178,20 @@
         .results {
             margin-top: 25px;
             display: grid;
-            grid-template-columns: repeat(3, minmax(200px, 1fr));
+            grid-template-columns: repeat(1, 1fr); /* デフォルトで1列 */
             gap: 15px;
         }
+        @media (min-width: 640px) { /* スマホより大きい画面 */
+            .results {
+                grid-template-columns: repeat(2, 1fr); /* 2列に */
+            }
+        }
+        @media (min-width: 1024px) { /* タブレットより大きい画面 */
+            .results {
+                grid-template-columns: repeat(3, 1fr); /* 3列に */
+            }
+        }
+
         .result-box {
             background-color: #e8f5e9;
             padding: 20px;
