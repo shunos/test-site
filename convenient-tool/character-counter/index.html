@@ -15,6 +15,7 @@
             background-color: #f3f4f8;
             color: #333;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
@@ -348,7 +349,7 @@
             display: none;
         }
         .tool-info-section {
-            margin-top: 40px;
+            margin-top: 48px;
         }
         .tool-info-section h2 {
             font-size: 1.5rem;
@@ -544,10 +545,9 @@
                 <span id="tt-count" class="count">0</span><span id="tt-max-count" class="max-count"> / 2,200</span>
             </div>
         </div>
-        
-        <hr style="margin: 30px 0; border: 1px solid #e0e0e0;">
 
-        <div class="tool-info-section">
+        <!-- ツールの説明エリア -->
+        <div class="tool-info-section p-8 bg-gray-50 rounded-xl">
             <h2>このツールについて</h2>
             <p>
                 この「文字数カウントツール」は、X（旧Twitter）やInstagram、レポート執筆など、様々なシーンでの文字数管理をサポートするために開発されました。
@@ -577,17 +577,19 @@
                 <dd>文字数制限の目安として、単純な文字数を表示しています。最大文字数は2,200文字です。</dd>
             </dl>
         </div>
-
-        <div class="w-full text-center py-6">
-            <a href="../index.html" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 ease-in-out transform hover:scale-105">
-                <!-- SVGアイコン -->
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clip-rule="evenodd" />
-                </svg>
-                「便利ツール」一覧に戻る
-            </a>
-        </div>
     </div>
+    
+    <!-- メインのコンテンツコンテナの外にボタンを配置 -->
+    <div class="w-full text-center py-6">
+        <a href="../index.html" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 ease-in-out transform hover:scale-105">
+            <!-- SVGアイコン -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+            </svg>
+            「便利ツール」一覧に戻る
+        </a>
+    </div>
+   
     
     <!-- リセット確認用モーダル -->
     <div id="reset-modal" class="modal-overlay hidden">
