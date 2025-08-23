@@ -68,7 +68,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-google-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.881a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101" />
                 </svg>
-                <h2 class="text-xl font-bold text-gray-800">短縮URLができました！</h2>
+                <h2 class="text-xl font-bold text-gray-800">短縮URLを生成しました！</h2>
             </div>
             
             <!-- 短縮URLとコピーボタン -->
@@ -106,6 +106,22 @@
             <div id="history-list" class="space-y-4">
                 <!-- 履歴アイテムはJavaScriptで挿入される -->
                 <p id="no-history-message" class="text-gray-500">履歴はありません。</p>
+            </div>
+        </div>
+
+        <!-- ツール説明エリア -->
+        <div class="border-t pt-6 mt-6 border-gray-200">
+            <div class="bg-gray-100 p-6 rounded-lg text-gray-700 leading-relaxed">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">ツールの説明</h2>
+                <p class="mb-4">このツールは、長いURLを短く、使いやすいURLに変換します。変換された短縮URLは、メールやSNSで共有する際に便利です。また、生成された短縮URLに対応するQRコードも自動で作成されるため、印刷物やポスターなどでも簡単に利用できます。</p>
+                <h2 class="text-2xl font-semibold mb-2">使い方</h2>
+                <ol class="list-decimal list-inside space-y-2">
+                    <li>上の入力欄に、短縮したい元のURLを入力します。</li>
+                    <li>「短縮URLを生成」ボタンをクリックします。</li>
+                    <li>短縮されたURLとQRコードが表示されます。</li>
+                    <li>「コピー」ボタンで短縮URLをコピーしたり、「QRコードをダウンロード」ボタンで画像を保存したりできます。</li>
+                    <li>使用した履歴は自動的に保存され、再度アクセスしたいときに便利です。</li>
+                </ol>
             </div>
         </div>
 
