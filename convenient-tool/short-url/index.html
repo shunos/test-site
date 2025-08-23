@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>短縮URL生成ツール</title>
+    <!-- Interフォントをインポート -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- QRコード生成ライブラリをインポート -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+        }
+        /* すべてのh2見出しを白に設定 */
+        h2 {
+            color: #ffffff;
+        }
+        .text-google-blue {
+            color: #4285F4;
+        }
+        /* Custom styles to ensure button text is always visible */
+        #generate-btn {
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+        }
+        #generate-btn:hover {
+            background-color: #4338ca; /* darker indigo */
+        }
+        #clear-btn {
+            background-color: white;
+            color: #4a5568; /* a darker gray for visibility */
+            border: 1px solid #e2e8f0;
+        }
+        #clear-btn:hover {
+            background-color: #f7fafc;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <!-- メインコンテナ -->
+    <div class="w-full max-w-2xl bg-white p-8 rounded-2xl shadow-xl space-y-6">
+
+        <!-- タイトル -->
+        <h1 class="text-4xl font-bold text-center text-[#1a237e]">短縮URL生成ツール</h1>
+        
+        <!-- URL入力エリア -->
+        <div>
+            <label for="long-url" class="block text-gray-700 font-medium mb-2">元のURL</label>
+            <input type="url" id="long-url" placeholder="https://example.com/very/long/url" class="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-google-blue transition-all">
+            <div id="error-message" class="text-red-500 text-sm mt-2 hidden">有効なURLを入力してください。</div>
+        </div>
+
+        <!-- ボタンコンテナ -->
+        <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+            <button id="generate-btn" class="w-full sm:w-1/2 p-3 font-semibold rounded-lg hover:bg-blue-600 transition-colors shadow-md">
+                短縮URLを生成
+            </button>
+            <button id="clear-btn" class="w-full sm:w-1/2 p-3 font-semibold rounded-lg transition-colors shadow-md">
+                クリア
+            </button>
+        </div>
+
+        <!-- 結果表示エリア -->
+        <div id="result-area" class="space-y-4 hidden">
+            <!-- 結果タイトル -->
+            <div class="flex items-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-google-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.881a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101" />
+                </svg>
+                <h2 class="text-xl font-bold text-gray-800">短縮URLを生成しました！</h2>
+            </div>
+            
+            <!-- 短縮URLとコピーボタン -->
+            <div class="relative flex items-center bg-gray-100 rounded-lg p-3">
+                <span id="short-url-display" class="flex-grow text-gray-800 break-all pr-12"></span>
+                <button id="copy-btn" class="absolute right-3 p-2 rounded-full hover:bg-gray-200 transition-colors" title="クリップボードにコピー">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v2" />
+                    </svg>
+                </button>
+            </div>
+            <div id="copy-feedback" class="text-green-500 text-sm mt-2 hidden">コピーしました！</div>
+
+            <!-- 元のURLとQRコード -->
+            <div class="space-y-4 pt-4">
+                <h3 class="text-lg font-bold text-gray-800">QRコード</h3>
+                <div class="flex flex-col items-center">
+                    <div id="qrcode" class="p-4 border border-gray-300 rounded-lg bg-white"></div>
+                    <p class="text-sm text-gray-500 mt-2 text-center">このQRコードをスキャンして短縮URLにアクセスできます。</p>
+                    <button id="download-qr-btn" class="mt-4 px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg shadow hover:bg-gray-300 transition-colors">
+                        QRコードをダウンロード
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 履歴エリア -->
+        <div class="border-t pt-6 mt-6 border-gray-200">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">使用履歴</h2>
+                <button id="clear-history-btn" class="px-4 py-2 text-sm text-red-600 font-semibold rounded-lg border border-red-300 hover:bg-red-50 transition-colors">
+                    履歴を削除
+                </button>
+            </div>
+            <div id="history-list" class="space-y-4">
+                <!-- 履歴アイテムはJavaScriptで挿入される -->
+                <p id="no-history-message" class="text-gray-500">履歴はありません。</p>
+            </div>
+        </div>
+
+        <!-- ツール説明エリア -->
+        <div class="border-t pt-6 mt-6 border-gray-200">
+            <div class="bg-gray-100 p-6 rounded-lg text-gray-700 leading-relaxed">
+                <h2 class="text-2xl font-bold mb-4">ツールの説明</h2>
+                <p class="mb-4">このツールは、長いURLを短く、使いやすいURLに変換します。変換された短縮URLは、メールやSNSで共有する際に便利です。また、生成された短縮URLに対応するQRコードも自動で作成されるため、印刷物やポスターなどでも簡単に利用できます。</p>
+                <h2 class="text-2xl font-semibold mb-2">使い方</h2>
+                <ol class="list-decimal list-inside space-y-2">
+                    <li>上の入力欄に、短縮したい元のURLを入力します。</li>
+                    <li>「短縮URLを生成」ボタンをクリックします。</li>
+                    <li>短縮されたURLとQRコードが表示されます。</li>
+                    <li>「コピー」ボタンで短縮URLをコピーしたり、「QRコードをダウンロード」ボタンで画像を保存したりできます。</li>
+                    <li>使用した履歴は自動的に保存され、再度アクセスしたいときに便利です。</li>
+                </ol>
+            </div>
+        </div>
+
+    </div>
+
+     <!-- メインのコンテンツコンテナの外にボタンを配置 -->
+    <div class="w-full text-center py-6">
+        <a href="https://chameleons.co.jp/work/category/tools/" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 ease-in-out transform hover:scale-105">
+            <!-- SVGアイコン -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+            </svg>
+            「便利ツール」一覧に戻る
+        </a>
+    </div>
+
+    <script>
+        // DOM要素の取得
+        const longUrlInput = document.getElementById('long-url');
+        const generateBtn = document.getElementById('generate-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const resultArea = document.getElementById('result-area');
+        const shortUrlDisplay = document.getElementById('short-url-display');
+        const copyBtn = document.getElementById('copy-btn');
+        const copyFeedback = document.getElementById('copy-feedback');
+        const qrcodeContainer = document.getElementById('qrcode');
+        const errorMessage = document.getElementById('error-message');
+        const historyList = document.getElementById('history-list');
+        const noHistoryMessage = document.getElementById('no-history-message');
+        const downloadQrBtn = document.getElementById('download-qr-btn');
+        const clearHistoryBtn = document.getElementById('clear-history-btn');
+
+        // URL履歴の最大件数
+        const HISTORY_LIMIT = 10;
+
+        // QRコード生成インスタンス
+        let qrcode = null;
+
+        // ページ読み込み時に履歴をロード
+        document.addEventListener('DOMContentLoaded', loadHistory);
+
+        // イベントリスナー
+        generateBtn.addEventListener('click', generateShortUrl);
+        clearBtn.addEventListener('click', clearAll);
+        copyBtn.addEventListener('click', copyShortUrl);
+        downloadQrBtn.addEventListener('click', downloadQrCode);
+        clearHistoryBtn.addEventListener('click', clearHistory);
+        
+        // エンターキーで短縮URLを生成
+        longUrlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                generateShortUrl();
+            }
+        });
+
+        /**
+         * 短縮URLを生成する非同期関数
+         */
+        async function generateShortUrl() {
+            const longUrl = longUrlInput.value.trim();
+            if (!isValidUrl(longUrl)) {
+                errorMessage.classList.remove('hidden');
+                resultArea.classList.add('hidden');
+                return;
+            }
+            errorMessage.classList.add('hidden');
+
+            // APIリクエスト中はボタンを無効化し、ローディング表示
+            generateBtn.textContent = '生成中...';
+            generateBtn.disabled = true;
+
+            try {
+                // 短縮URL生成API（is.gdを使用）
+                const apiUrl = `https://is.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}`;
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                if (data.shorturl) {
+                    const shortUrl = data.shorturl;
+                    displayResult(shortUrl, longUrl);
+                    saveToHistory(longUrl, shortUrl);
+                } else {
+                    shortUrlDisplay.textContent = '短縮に失敗しました。';
+                    resultArea.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('API Error:', error);
+                shortUrlDisplay.textContent = 'エラーが発生しました。';
+                resultArea.classList.remove('hidden');
+            } finally {
+                // APIリクエスト完了後にボタンを元に戻す
+                generateBtn.textContent = '短縮URLを生成';
+                generateBtn.disabled = false;
+            }
+        }
+
+        /**
+         * URLの有効性をチェックする関数
+         * @param {string} url - チェックするURL
+         * @returns {boolean} - 有効な場合はtrue
+         */
+        function isValidUrl(url) {
+            try {
+                new URL(url);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        /**
+         * 生成結果を表示する関数
+         * @param {string} shortUrl - 生成された短縮URL
+         * @param {string} longUrl - 元のURL
+         */
+        function displayResult(shortUrl, longUrl) {
+            shortUrlDisplay.textContent = shortUrl;
+            resultArea.classList.remove('hidden');
+            copyFeedback.classList.add('hidden');
+            
+            // 既存のQRコードをクリアして再生成
+            if (qrcode) {
+                qrcodeContainer.innerHTML = '';
+            }
+            qrcode = new QRCode(qrcodeContainer, {
+                text: shortUrl,
+                width: 128,
+                height: 128,
+                colorDark : "#1a237e",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        }
+
+        /**
+         * クリップボードに短縮URLをコピーする関数
+         */
+        function copyShortUrl() {
+            const textToCopy = shortUrlDisplay.textContent;
+            const tempInput = document.createElement('textarea');
+            tempInput.value = textToCopy;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            
+            try {
+                document.execCommand('copy');
+                copyFeedback.classList.remove('hidden');
+                setTimeout(() => {
+                    copyFeedback.classList.add('hidden');
+                }, 2000); // 2秒後にフィードバックを非表示
+            } catch (err) {
+                console.error('コピー失敗:', err);
+            }
+            document.body.removeChild(tempInput);
+        }
+
+        /**
+         * QRコードをダウンロードする関数
+         */
+        function downloadQrCode() {
+            const canvas = qrcodeContainer.querySelector('canvas');
+            if (canvas) {
+                // ダウンロード用の新しいキャンバスを作成
+                const newCanvas = document.createElement('canvas');
+                const margin = 15; // 余白のサイズ（ピクセル）
+                const originalWidth = canvas.width;
+                const originalHeight = canvas.height;
+                
+                newCanvas.width = originalWidth + margin * 2;
+                newCanvas.height = originalHeight + margin * 2;
+                
+                const ctx = newCanvas.getContext('2d');
+                ctx.fillStyle = '#FFFFFF'; // 白い背景で塗りつぶし
+                ctx.fillRect(0, 0, newCanvas.width, newCanvas.height);
+                
+                // 元のQRコードを新しいキャンバスに描画
+                ctx.drawImage(canvas, margin, margin);
+                
+                // ダウンロード
+                const url = newCanvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'qrcode.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                // Fallback for browsers that don't support canvas in qrcode.js (older versions)
+                const img = qrcodeContainer.querySelector('img');
+                if (img) {
+                    const url = img.src;
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'qrcode.png';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            }
+        }
+
+        /**
+         * 入力エリアと結果エリアをクリアする関数
+         */
+        function clearAll() {
+            longUrlInput.value = '';
+            resultArea.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+        }
+
+        /**
+         * 履歴をすべて削除する関数
+         */
+        function clearHistory() {
+            localStorage.removeItem('urlHistory');
+            renderHistory([]);
+        }
+        
+        /**
+         * 履歴をローカルストレージに保存する関数
+         * @param {string} longUrl - 元のURL
+         * @param {string} shortUrl - 短縮URL
+         */
+        function saveToHistory(longUrl, shortUrl) {
+            const history = JSON.parse(localStorage.getItem('urlHistory')) || [];
+            
+            // 新しい履歴アイテム
+            const newItem = { longUrl, shortUrl, date: new Date().toLocaleString() };
+            
+            // 重複チェック
+            const existingIndex = history.findIndex(item => item.longUrl === longUrl);
+            if (existingIndex !== -1) {
+                // 既存のものを削除し、先頭に追加
+                history.splice(existingIndex, 1);
+            }
+            
+            // 先頭に新しい履歴を追加
+            history.unshift(newItem);
+            
+            // 件数を制限
+            const limitedHistory = history.slice(0, HISTORY_LIMIT);
+            localStorage.setItem('urlHistory', JSON.stringify(limitedHistory));
+            
+            // 履歴リストを再描画
+            renderHistory(limitedHistory);
+        }
+
+        /**
+         * 履歴をロードし、表示する関数
+         */
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('urlHistory')) || [];
+            renderHistory(history);
+        }
+
+        /**
+         * 履歴リストをHTMLに描画する関数
+         * @param {Array<Object>} history - 履歴データ
+         */
+        function renderHistory(history) {
+            historyList.innerHTML = '';
+            if (history.length === 0) {
+                noHistoryMessage.classList.remove('hidden');
+            } else {
+                noHistoryMessage.classList.add('hidden');
+                history.forEach(item => {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'bg-gray-50 p-4 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer';
+                    historyItem.innerHTML = `
+                        <div class="text-sm text-gray-400 mb-1">${item.date}</div>
+                        <a href="${item.shortUrl}" target="_blank" rel="noopener noreferrer" class="text-google-blue font-medium break-all hover:underline">${item.shortUrl}</a>
+                        <div class="text-xs text-gray-500 mt-1 truncate">${item.longUrl}</div>
+                    `;
+                    historyItem.addEventListener('click', () => {
+                        window.open(item.shortUrl, '_blank');
+                    });
+                    historyList.appendChild(historyItem);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
