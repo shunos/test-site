@@ -40,6 +40,29 @@
         #clear-btn:hover {
             background-color: #f7fafc;
         }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 400px;
+            text-align: center;
+        }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
@@ -144,6 +167,15 @@
         </a>
     </div>
 
+    <!-- Custom Modal for Alerts -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <p id="modal-message" class="text-gray-800 font-medium mb-4"></p>
+            <button id="modal-close-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">OK</button>
+        </div>
+    </div>
+
+
     <script>
         // DOM要素の取得
         const longUrlInput = document.getElementById('long-url');
@@ -160,6 +192,11 @@
         const downloadQrBtn = document.getElementById('download-qr-btn');
         const clearHistoryBtn = document.getElementById('clear-history-btn');
 
+        // Modal elements
+        const modal = document.getElementById('modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
         // URL履歴の最大件数
         const HISTORY_LIMIT = 10;
 
@@ -175,13 +212,23 @@
         copyBtn.addEventListener('click', copyShortUrl);
         downloadQrBtn.addEventListener('click', downloadQrCode);
         clearHistoryBtn.addEventListener('click', clearHistory);
-        
-        // エンターキーで短縮URLを生成
+        modalCloseBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+
+        // Enter key to generate URL
         longUrlInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 generateShortUrl();
             }
         });
+
+        /**
+         * Custom modal to show messages
+         * @param {string} message - The message to display
+         */
+        function showModal(message) {
+            modalMessage.textContent = message;
+            modal.style.display = 'flex';
+        }
 
         /**
          * 短縮URLを生成する非同期関数
@@ -200,23 +247,25 @@
             generateBtn.disabled = true;
 
             try {
-                // 短縮URL生成API（is.gdを使用）
-                const apiUrl = `https://is.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}`;
+                // 短縮URL生成APIをis.gdに戻し、logstats=1パラメータを追加
+                const apiUrl = `https://is.gd/create.php?format=json&logstats=1&url=${encodeURIComponent(longUrl)}`;
                 const response = await fetch(apiUrl);
-                const data = await response.json();
+                const result = await response.json();
 
-                if (data.shorturl) {
-                    const shortUrl = data.shorturl;
-                    displayResult(shortUrl, longUrl);
-                    saveToHistory(longUrl, shortUrl);
+                if (response.ok && result.shorturl) {
+                    displayResult(result.shorturl, longUrl);
+                    saveToHistory(longUrl, result.shorturl);
+                } else if (result.errorcode) {
+                    showModal(`短縮に失敗しました: ${result.errormessage}`);
+                    resultArea.classList.add('hidden');
                 } else {
-                    shortUrlDisplay.textContent = '短縮に失敗しました。';
-                    resultArea.classList.remove('hidden');
+                    showModal('短縮に失敗しました。予期せぬエラーが発生しました。');
+                    resultArea.classList.add('hidden');
                 }
             } catch (error) {
                 console.error('API Error:', error);
-                shortUrlDisplay.textContent = 'エラーが発生しました。';
-                resultArea.classList.remove('hidden');
+                showModal('エラーが発生しました。ネットワーク接続を確認してください。');
+                resultArea.classList.add('hidden');
             } finally {
                 // APIリクエスト完了後にボタンを元に戻す
                 generateBtn.textContent = '短縮URLを生成';
@@ -360,15 +409,15 @@
             // 重複チェック
             const existingIndex = history.findIndex(item => item.longUrl === longUrl);
             if (existingIndex !== -1) {
-                // 既存のものを削除し、先頭に追加
+                // 既存のものを削除
                 history.splice(existingIndex, 1);
             }
             
-            // 先頭に新しい履歴を追加
-            history.unshift(newItem);
-            
+            // 新しいアイテムを配列の先頭に追加
+            const updatedHistory = [newItem, ...history];
+
             // 件数を制限
-            const limitedHistory = history.slice(0, HISTORY_LIMIT);
+            const limitedHistory = updatedHistory.slice(0, HISTORY_LIMIT);
             localStorage.setItem('urlHistory', JSON.stringify(limitedHistory));
             
             // 履歴リストを再描画
@@ -395,15 +444,27 @@
                 noHistoryMessage.classList.add('hidden');
                 history.forEach(item => {
                     const historyItem = document.createElement('div');
-                    historyItem.className = 'bg-gray-50 p-4 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer';
+                    historyItem.className = 'bg-gray-50 p-4 rounded-lg border border-gray-200';
+                    
+                    // 短縮URLからパス部分を取得（例: https://is.gd/ABCDE -> ABCDE）
+                    const shortUrlCode = item.shortUrl.split('/').pop();
+                    // 新しい統計ページのURLを動的に生成
+                    const analyticsUrl = `https://is.gd/stats.php?url=${shortUrlCode}`;
+                    
                     historyItem.innerHTML = `
-                        <div class="text-sm text-gray-400 mb-1">${item.date}</div>
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="text-sm text-gray-400">${item.date}</div>
+                            <button onclick="window.open('${analyticsUrl}', '_blank')" class="flex items-center space-x-1 px-3 py-1 text-sm bg-blue-100 text-blue-600 font-medium rounded-full hover:bg-blue-200 transition-colors">
+                                <span>分析</span>
+                                <!-- Staircase bar chart icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M4 22H6V16H4V22ZM10 22H12V10H10V22ZM16 22H18V4H16V22Z"></path>
+                                </svg>
+                            </button>
+                        </div>
                         <a href="${item.shortUrl}" target="_blank" rel="noopener noreferrer" class="text-google-blue font-medium break-all hover:underline">${item.shortUrl}</a>
                         <div class="text-xs text-gray-500 mt-1 truncate">${item.longUrl}</div>
                     `;
-                    historyItem.addEventListener('click', () => {
-                        window.open(item.shortUrl, '_blank');
-                    });
                     historyList.appendChild(historyItem);
                 });
             }
