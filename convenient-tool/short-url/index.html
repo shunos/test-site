@@ -208,6 +208,10 @@
         コピーしました！
     </div>
 
+    <!-- CSV Download feedback tooltip -->
+    <div id="csv-download-feedback" class="hidden fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg">
+        履歴をCSVとしてダウンロードしました。
+    </div>
 
     <script>
         // DOM要素の取得
@@ -226,6 +230,7 @@
         const clearHistoryBtn = document.getElementById('clear-history-btn');
         const downloadCsvBtn = document.getElementById('download-csv-btn');
         const historyCopyFeedback = document.getElementById('history-copy-feedback');
+        const csvDownloadFeedback = document.getElementById('csv-download-feedback');
 
         // Modal elements
         const modal = document.getElementById('modal');
@@ -258,6 +263,13 @@
         downloadCsvBtn.addEventListener('click', downloadCsv);
         modalCloseBtn.addEventListener('click', () => { modal.style.display = 'none'; });
         downloadHistoryQrBtn.addEventListener('click', () => downloadQrCodeFromModal(lastQrUrl));
+        
+        // QRモーダル外のクリックイベント
+        qrModal.addEventListener('click', (e) => {
+            if (e.target === qrModal) {
+                qrModal.style.display = 'none';
+            }
+        });
 
         // Enter key to generate URL
         longUrlInput.addEventListener('keypress', (e) => {
@@ -605,7 +617,11 @@
             link.click();
             document.body.removeChild(link);
             
-            showModal('履歴をCSVとしてダウンロードしました。');
+            // ポップアップではなく、画面下部にフィードバックを表示
+            csvDownloadFeedback.classList.remove('hidden');
+            setTimeout(() => {
+                csvDownloadFeedback.classList.add('hidden');
+            }, 2000); // 2秒後にフィードバックを非表示
         }
     </script>
 </body>
