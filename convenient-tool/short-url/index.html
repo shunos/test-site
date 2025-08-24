@@ -139,9 +139,14 @@
         <div class="border-t pt-6 mt-6 border-gray-200">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-2xl font-bold text-gray-800">使用履歴</h2>
-                <button id="clear-history-btn" class="px-4 py-2 text-sm text-red-600 font-semibold rounded-lg border border-red-300 hover:bg-red-50 transition-colors">
-                    履歴を削除
-                </button>
+                <div class="flex space-x-2">
+                    <button id="download-csv-btn" class="px-4 py-2 text-sm text-gray-600 font-semibold rounded-lg border border-gray-300 hover:bg-gray-100 transition-colors">
+                        CSVダウンロード
+                    </button>
+                    <button id="clear-history-btn" class="px-4 py-2 text-sm text-red-600 font-semibold rounded-lg border border-red-300 hover:bg-red-50 transition-colors">
+                        履歴を削除
+                    </button>
+                </div>
             </div>
             <div id="history-list" class="space-y-4">
                 <!-- 履歴アイテムはJavaScriptで挿入される -->
@@ -219,6 +224,7 @@
         const noHistoryMessage = document.getElementById('no-history-message');
         const downloadQrBtn = document.getElementById('download-qr-btn');
         const clearHistoryBtn = document.getElementById('clear-history-btn');
+        const downloadCsvBtn = document.getElementById('download-csv-btn');
         const historyCopyFeedback = document.getElementById('history-copy-feedback');
 
         // Modal elements
@@ -235,7 +241,7 @@
         let lastQrUrl = '';
         
         // URL履歴の最大件数
-        const HISTORY_LIMIT = 10;
+        const HISTORY_LIMIT = 20;
 
         // QRコード生成インスタンス
         let qrcode = null;
@@ -249,6 +255,7 @@
         copyBtn.addEventListener('click', copyShortUrl);
         downloadQrBtn.addEventListener('click', downloadQrCode);
         clearHistoryBtn.addEventListener('click', clearHistory);
+        downloadCsvBtn.addEventListener('click', downloadCsv);
         modalCloseBtn.addEventListener('click', () => { modal.style.display = 'none'; });
         downloadHistoryQrBtn.addEventListener('click', () => downloadQrCodeFromModal(lastQrUrl));
 
@@ -454,7 +461,7 @@
             }
             document.body.removeChild(tempInput);
         }
-        
+
         /**
          * 履歴をローカルストレージに保存する関数
          * @param {string} longUrl - 元のURL
@@ -464,7 +471,9 @@
             const history = JSON.parse(localStorage.getItem('urlHistory')) || [];
             
             // 新しい履歴アイテム
-            const newItem = { longUrl, shortUrl, date: new Date().toLocaleString() };
+            const shortUrlCode = shortUrl.split('/').pop();
+            const analyticsUrl = `https://is.gd/stats.php?url=${shortUrlCode}`;
+            const newItem = { longUrl, shortUrl, analyticsUrl, date: new Date().toLocaleString() };
             
             // 重複チェック
             const existingIndex = history.findIndex(item => item.longUrl === longUrl);
@@ -506,16 +515,11 @@
                     const historyItem = document.createElement('div');
                     historyItem.className = 'bg-gray-50 p-4 rounded-lg border border-gray-200';
                     
-                    // 短縮URLからパス部分を取得（例: https://is.gd/ABCDE -> ABCDE）
-                    const shortUrlCode = item.shortUrl.split('/').pop();
-                    // 新しい統計ページのURLを動的に生成
-                    const analyticsUrl = `https://is.gd/stats.php?url=${shortUrlCode}`;
-                    
                     historyItem.innerHTML = `
                         <div class="flex items-center justify-between mb-2">
                             <div class="text-sm text-gray-400">${item.date}</div>
                             <div class="flex space-x-2">
-                                <button onclick="window.open('${analyticsUrl}', '_blank')" class="flex items-center space-x-1 px-3 py-1 text-sm bg-blue-100 text-blue-600 font-medium rounded-full hover:bg-blue-200 transition-colors">
+                                <button onclick="window.open('${item.analyticsUrl}', '_blank')" class="flex items-center space-x-1 px-3 py-1 text-sm bg-blue-100 text-blue-600 font-medium rounded-full hover:bg-blue-200 transition-colors">
                                     <span>分析</span>
                                     <!-- Bar chart icon -->
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
@@ -564,6 +568,45 @@
             qrModal.style.display = 'flex';
         }
 
+        /**
+         * 履歴データをCSVとしてダウンロードする関数
+         */
+        function downloadCsv() {
+            const history = JSON.parse(localStorage.getItem('urlHistory')) || [];
+            if (history.length === 0) {
+                showModal('ダウンロードする履歴がありません。');
+                return;
+            }
+            
+            // CSVのヘッダーを作成
+            const headers = ["Long URL", "Short URL", "Access Analysis"];
+            
+            // データをCSV形式に変換
+            const csvRows = history.map(item => {
+                const escapeCsv = (str) => `"${String(str || '').replace(/"/g, '""')}"`;
+                return [
+                    escapeCsv(item.longUrl),
+                    escapeCsv(item.shortUrl),
+                    escapeCsv(item.analyticsUrl)
+                ].join(",");
+            });
+            
+            const csvContent = headers.join(",") + "\n" + csvRows.join("\n");
+            
+            // BOM（バイトオーダーマーク）を追加して、Excelでの文字化けを防ぐ
+            const blob = new Blob(["\uFEFF", csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            // ダウンロードリンクを作成してクリック
+            const link = document.createElement('a');
+            link.setAttribute("href", url);
+            link.setAttribute("download", "url_history.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showModal('履歴をCSVとしてダウンロードしました。');
+        }
     </script>
 </body>
 </html>
