@@ -1,3 +1,5 @@
+(function() {
+    // HTML要素を取得
     const resultDiv = document.getElementById('result');
     const uppercaseEl = document.getElementById('uppercase');
     const lowercaseEl = document.getElementById('lowercase');
@@ -6,7 +8,7 @@
     const lengthSlider = document.getElementById('length-slider');
     const lengthInput = document.getElementById('length-input');
     const strengthBar = document.getElementById('strength-bar');
-    const strengthText = document.getElementById('strength-text'); 
+    const strengthText = document.getElementById('strength-text');
     const presetButtons = document.getElementById('preset-buttons');
     const generateBtn = document.getElementById('generate');
     const copyAllBtn = document.getElementById('copy-all');
@@ -25,11 +27,12 @@
         symbols: '!@#$%^&*()_+-=[]{}|;:",.<>?'
     };
 
-    // Function to shuffle an array (Fisher-Yates algorithm)
+    // 配列をシャッフルする関数（修正済み）
     const shuffleArray = (array) => {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[i], array[j]];
+            // 変数を入れ替えて、配列の要素をランダムにシャッフル
+            [array[i], array[j]] = [array[j], array[i]];
         }
         return array;
     };
@@ -177,20 +180,16 @@
 
             let messageElement;
 
-            // メインパスワードのコピーボタンの場合
             if (clickedElement.id === 'copy-main-btn') {
                 messageElement = copyMessageMain;
-            // 「すべてコピー」ボタンの場合
             } else if (clickedElement.id === 'copy-all') {
                 messageElement = copyMessageAll;
             } else {
-                // 他の候補のコピーボタンの場合
                 messageElement = document.createElement('div');
                 messageElement.className = 'absolute bottom-full right-0 mb-1 px-2 py-0.5 bg-green-500 text-white text-xs rounded-full opacity-0 transition-opacity duration-300';
                 messageElement.textContent = 'コピーしました！';
                 clickedElement.parentElement.appendChild(messageElement);
                 
-                // DOM追加後、わずかな遅延を設けてアニメーションを開始
                 setTimeout(() => {
                     messageElement.classList.remove('opacity-0');
                     messageElement.classList.add('opacity-100');
@@ -198,7 +197,6 @@
             }
 
             if (messageElement) {
-                // メインと「すべてコピー」ボタンのメッセージは、遅延なしでアニメーションを開始
                 if (clickedElement.id === 'copy-main-btn' || clickedElement.id === 'copy-all') {
                     messageElement.classList.remove('opacity-0');
                     messageElement.classList.add('opacity-100');
@@ -207,7 +205,6 @@
                 setTimeout(() => {
                     messageElement.classList.remove('opacity-100');
                     messageElement.classList.add('opacity-0');
-                    // 候補ボタンのメッセージは、トランジション後に要素を削除
                     if (clickedElement.id !== 'copy-main-btn' && clickedElement.id !== 'copy-all') {
                         setTimeout(() => {
                             messageElement.remove();
@@ -222,15 +219,20 @@
 
     function updateLengthUI(value) {
         const num = parseInt(value, 10);
-        lengthSlider.value = num;
-        lengthValueSpan.textContent = num;
-
-        // Update custom property for slider progress
+        if (isNaN(num)) {
+            lengthSlider.value = lengthSlider.min;
+            lengthInput.value = lengthSlider.min;
+            lengthValueSpan.textContent = lengthSlider.min;
+            return;
+        }
+        const clampedNum = Math.min(Math.max(num, 4), 40);
+        lengthSlider.value = clampedNum;
+        lengthInput.value = clampedNum;
+        lengthValueSpan.textContent = clampedNum;
         const max = parseInt(lengthSlider.max, 10);
-        const percentage = ((num - lengthSlider.min) / (max - lengthSlider.min)) * 100;
+        const percentage = ((clampedNum - lengthSlider.min) / (max - lengthSlider.min)) * 100;
         lengthSlider.style.setProperty('--range-progress', `${percentage}%`);
-
-        const radio = document.getElementById(`preset-${num}`);
+        const radio = document.getElementById(`preset-${clampedNum}`);
         if (radio) {
             radio.checked = true;
         } else {
@@ -238,17 +240,9 @@
         }
     }
 
-    // --- Event Listeners ---
-
+    // イベントリスナー
     lengthInput.addEventListener('input', (e) => {
-        const value = e.target.value;
-        // 無効な入力の場合はスライダーをリセット
-        if (isNaN(parseInt(value, 10))) {
-            updateLengthUI(lengthSlider.min);
-        } else {
-            lengthSlider.value = value;
-            updateLengthUI(value);
-        }
+        updateLengthUI(e.target.value);
     });
 
     lengthInput.addEventListener('blur', generatePasswords);
@@ -279,22 +273,24 @@
 
     generateBtn.addEventListener('click', generatePasswords);
     
-    copyMainBtn.addEventListener('click', (event) => {
-        copyToClipboard(passwordDisplay.textContent, event.currentTarget);
+    copyMainBtn.addEventListener('click', () => {
+        copyToClipboard(passwordDisplay.textContent, copyMainBtn);
     });
     
-    copyAllBtn.addEventListener('click', (event) => {
+    copyAllBtn.addEventListener('click', () => {
         const allPasswords = Array.from(resultDiv.querySelectorAll('span'))
             .map(span => span.textContent)
             .join('\n');
-        copyToClipboard(allPasswords, event.currentTarget);
+        copyToClipboard(allPasswords, copyAllBtn);
     });
     
     document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
         checkbox.addEventListener('change', generatePasswords);
     });
 
+    // ページの読み込みが完了した後に初期化
     window.onload = function() {
         updateLengthUI(12);
         generatePasswords();
     };
+})();
