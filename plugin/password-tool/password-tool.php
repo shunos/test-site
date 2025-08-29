@@ -1,14 +1,14 @@
 <?php
 /**
  * Plugin Name: Password Tool JS
- * Description: パスワード生成ツール用のJavaScriptを読み込みます。
+ * Description: ショートコードでパスワード生成ツールのJavaScriptを読み込みます。
  * Version: 1.0
  * Author: shuno
  */
 
-// JavaScriptを安全に読み込む
-function password_tool_enqueue_assets() {
-    // JavaScriptを読み込み
+// ショートコードが使われたときに実行される関数
+function password_tool_js_shortcode_handler() {
+    // wp_enqueue_scriptを直接呼び出すことで、このショートコードが使われたページでのみJSを読み込む
     wp_enqueue_script(
         'password-tool-js',
         plugin_dir_url(__FILE__) . 'password-tool.js',
@@ -16,5 +16,10 @@ function password_tool_enqueue_assets() {
         '1.0',
         true // body閉じタグ直前で読み込む
     );
+
+    // ショートコード自体は何も表示しない
+    return '';
 }
-add_action('wp_enqueue_scripts', 'password_tool_enqueue_assets');
+
+// 'password_tool_js' というショートコードを登録
+add_shortcode('password_tool_js', 'password_tool_js_shortcode_handler');
